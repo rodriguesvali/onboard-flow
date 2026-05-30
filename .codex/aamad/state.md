@@ -10,10 +10,18 @@ Package managers: not detected
 
 ## Current Stage
 
-Bootstrap completed. The next step is Agentic Architect review of this generic AAMAD/Codex adaptation. Project discovery, MVP definition, system architecture, implementation planning, and project-specific agent-role refinement are intentionally deferred until AAMAD Flow is explicitly started.
+Define phase completed and approved by the Agentic Architect.
 
-IDE-targeted AAMAD files were copied into `.codex/aamad/` and the temporary upstream source was removed. AAMAD Flow depends on `.codex/aamad/`.
+Approved Define artifacts:
+
+- `project-context/1.define/mrd.md`
+- `project-context/1.define/prd.md`
+- `project-context/1.define/sad.md`
+
+The next valid stage is Build preparation under AAMAD Flow. Before coding starts, the project should proceed through the approved Build entry step, including tool availability validation, implementation sequencing, and any required role refinement.
 
 ## Review Gate
 
 No AAMAD artifact may advance to the next stage until the human Agentic Architect reviews it and explicitly approves, requests changes, or redirects the workflow.
+
+Current Define harmonization review gate is approved as recorded in `.codex/aamad/review-log.md`.
