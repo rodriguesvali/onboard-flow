@@ -24,4 +24,4 @@ The next valid stage is Build preparation under AAMAD Flow. Before coding starts
 
 No AAMAD artifact may advance to the next stage until the human Agentic Architect reviews it and explicitly approves, requests changes, or redirects the workflow.
 
-Current Define harmonization review gate is approved as recorded in `.codex/aamad/review-log.md`.
+Current SAD Flow + Crew orchestration review gate is approved as recorded in `.codex/aamad/review-log.md`.

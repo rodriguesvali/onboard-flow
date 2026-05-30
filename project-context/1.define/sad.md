@@ -15,6 +15,11 @@ Source artifacts:
 - `project-context/1.define/prd.md`
 - `project-context/1.define/CONTEXT.md`
 - `.codex/aamad/templates/sad-template.md`
+- Agentic Architect Lesson 2 input: CrewAI Crews vs Flows architecture decision framework
+- Agentic Architect model selection: `gemini-3.5-flash`
+- Agentic Architect MVP default decisions: pt-BR messages, SQLite persistence, separate frontend/backend services
+- Agentic Architect MVP scope decision: include conversational refinement from the start
+- Agentic Architect MVP auth decision: use mock user context, no real user authentication
 
 Architecture mode: MVP-focused SAD.  
 Architecture constraint: do not add live HRIS, ITSM, IAM, LMS, email, payroll, ERP, digital signature, employee scoring, or employment decisioning to the MVP.
@@ -29,6 +34,7 @@ Architecture constraint: do not add live HRIS, ITSM, IAM, LMS, email, payroll, E
 4. Grounded agent behavior: agents use local catalogs, schemas, and explicit task boundaries.
 5. Traceability from day one: every generation run records input, agent activity, validation results, and output summaries.
 6. Integration-light MVP: external systems are deferred; exportable artifacts prove value before automation risk is introduced.
+7. Flow-led control with Crew-bounded reasoning: deterministic workflow control belongs to Flow; specialist reasoning belongs to bounded Crew/agent tasks with schemas and validation gates.
 
 ### Core vs Future Feature Decision Framework
 
@@ -40,15 +46,16 @@ MVP core:
 - Local catalogs for documents, access, equipment, training, and message templates.
 - Consolidated onboarding plan in structured JSON and Markdown.
 - Basic web workbench for review.
+- Conversational refinement for reviewed plan adjustments.
 - Action/history log.
 
 Future:
 
-- Editable plan workbench with generated-vs-human diff.
+- Full editable plan workbench with generated-vs-human diff beyond conversational refinement.
 - Configurable catalogs and catalog versioning.
 - Status tracking across onboarding lifecycle.
 - HRIS, ITSM, IAM, LMS, email, chat, and document integrations.
-- SSO/RBAC, managed persistence, analytics, and governance reports.
+- Real user authentication, SSO/RBAC, managed persistence, analytics, and governance reports.
 
 ### Technical Architecture Decisions
 
@@ -97,20 +104,20 @@ Implications:
 - Domain models, value objects, and domain services must not depend on FastAPI, CrewAI, databases, or LLM SDKs.
 - Application services orchestrate use cases such as generating an onboarding plan and retrieving run status.
 - Ports define required capabilities such as catalog access, run-history persistence, LLM/agent execution, Markdown rendering, and future external-system actions.
-- Adapters implement those ports for local JSON/YAML catalogs, SQLite/file storage, CrewAI, API routes, and future integrations.
+- Adapters implement those ports for local JSON/YAML catalogs, SQLite persistence, CrewAI, API routes, and future integrations.
 - Framework code remains at the edge of the backend and translates requests/responses into application commands and DTOs.
 
-#### ADR-005: Local persistence and catalogs for MVP
+#### ADR-005: Local catalogs and SQLite persistence for MVP
 
-Decision: Use local JSON/YAML catalogs and lightweight local persistence for MVP.
+Decision: Use local JSON/YAML catalogs and SQLite persistence for MVP.
 
 Rationale: The PRD explicitly permits local JSON/YAML or database-backed catalogs and file-based or embedded persistence. External integrations are out of scope.
 
 Implications:
 
 - Catalogs should be versionable in the repository.
-- Generated plans and run histories can be stored locally in development.
-- If SQLite is used, database schema changes must still be managed through Alembic migrations.
+- Generated plans, run histories, and plan revisions are stored locally in SQLite during development.
+- SQLite schema changes must be managed through Alembic migrations.
 - Future managed-database choices should preserve the same migration discipline without changing domain logic.
 
 #### ADR-006: Streaming or progress updates as nice-to-have MVP behavior
@@ -123,6 +130,117 @@ Implications:
 
 - Initial implementation may use a job status endpoint.
 - Real-time streaming can be added later without changing core domain contracts.
+
+#### ADR-007: CrewAI Flow plus Crew orchestration
+
+Decision: Organize the CrewAI runtime as an Onboarding Flow that controls the process sequence and one or more Crews/agents that execute specialized analyses.
+
+Rationale: The onboarding process has deterministic stage gates, validation steps, dependency ordering, and final schema checks that should not be left to autonomous agent collaboration. CrewAI Flow is responsible for controlled orchestration, while Crews and specialist agents perform bounded domain analysis for HR intake, compliance, IT provisioning, training, and communication.
+
+Implications:
+
+- The Onboarding Flow owns process order, state transitions, validation checkpoints, error handling, retries, and final plan assembly.
+- Specialist agents run inside CrewAI Crew execution boundaries and return structured outputs to the Flow.
+- The Flow may run independent specialist tasks sequentially or in parallel where dependencies allow, but Communication must wait for profile and specialist outputs.
+- The Flow must validate each specialist output before it is accepted into the consolidated case context.
+- The Flow is exposed through the backend application service via a port, keeping CrewAI framework details in an adapter.
+
+#### ADR-008: Architecture selection by precision and complexity scoring
+
+Decision: Classify OnboardFlow AI as high precision and high complexity, therefore requiring a Flow + Crew hybrid rather than a Crew-only implementation.
+
+Rationale: The PRD requires strict structured outputs, repeatable validation, action history, schema compliance, and human-reviewable artifacts. It also requires several specialized domains, task dependencies, conditional handling for missing data and specialist failures, and cross-domain consolidation. Using only a Crew would increase output variation and weaken step-level control; using only a Flow would underuse specialist reasoning for compliance, IT, training, and communication drafting.
+
+Scoring summary:
+
+| Axis | Dimension | Score | Reason |
+| --- | --- | ---: | --- |
+| Precision | Output structure | 9 | Final plan and agent outputs must be structured JSON plus Markdown. |
+| Precision | Accuracy needs | 8 | HR, IT, compliance, and onboarding readiness recommendations must be reliable and explainable. |
+| Precision | Reproducibility | 8 | Similar inputs should produce consistent sections, status, action history, and schema shape. |
+| Precision | Error tolerance | 8 | Errors affect HR coordination, first-day readiness, and stakeholder trust. |
+| Complexity | Number of steps | 9 | The end-to-end flow has intake, validation, five specialist stages, consolidation, rendering, and logging. |
+| Complexity | Interdependencies | 8 | Communications, agenda, risks, and final status depend on profile plus specialist outputs. |
+| Complexity | Conditional logic | 7 | Missing data, draft mode, retry, partial failure, and incomplete-section routing are required. |
+| Complexity | Domain knowledge | 7 | HR operations, compliance, IT provisioning, training, and communication require specialized reasoning. |
+
+Result: high precision plus high complexity places the MVP in the Flow + Crew quadrant.
+
+Implications:
+
+- Flow is mandatory for sequencing, state, routing, validation, retries, and reproducibility.
+- Crews/agents are mandatory for domain-specialist analysis where the task benefits from expertise and synthesis.
+- No specialist Crew may bypass Flow-level validation, persistence, or final assembly.
+- Build-phase implementation must preserve the hybrid boundary even if the first MVP uses a single analysis Crew internally.
+
+#### ADR-009: Default LLM provider and model for MVP
+
+Decision: Use Google's Gemini API with `gemini-3.5-flash` as the default LLM model for local MVP development.
+
+Rationale: The Agentic Architect selected `gemini-3.5-flash` for the project. The MVP needs a fast, cost-conscious model suitable for repeated specialist-agent runs, structured drafting, and local demos. The architecture keeps the model behind the backend LLM/model access port so implementation can change providers or models later without changing domain logic.
+
+Implications:
+
+- Backend configuration must default to `LLM_PROVIDER=google-gemini` and `LLM_MODEL=gemini-3.5-flash`.
+- Gemini credentials must remain server-side and must never be exposed to the Angular frontend.
+- CrewAI agents and Flow orchestration must receive model access only through backend configuration or an adapter.
+- Tests should mock the LLM/model access port rather than requiring live Gemini calls.
+- Build preparation must verify the current Gemini API and CrewAI configuration syntax before coding, following `project-context/1.define/mantadory-tools.md`.
+
+#### ADR-010: MVP implementation defaults
+
+Decision: Use pt-BR as the default generated-message language, SQLite as the MVP run-history persistence mechanism, and separate frontend/backend services from the start.
+
+Rationale: The Agentic Architect selected these defaults to remove Build-phase ambiguity. pt-BR aligns the first demo with the expected operating language. SQLite gives the web workbench repeatable run retrieval, action history, and plan persistence without introducing managed infrastructure. Separate Angular and Python services preserve the natural framework boundaries: Angular owns the workbench and Python owns CrewAI orchestration, Gemini access, catalogs, validation, and persistence.
+
+Implications:
+
+- Message templates and generated communication drafts must default to `pt-BR`.
+- Employee input may still include `preferredLanguage`, but multi-language template behavior remains future work unless explicitly pulled into MVP scope.
+- The initial persistence adapter must use SQLite for runs, generated plans, and action history.
+- SQLite schema changes must follow the Alembic rule in the database versioning section.
+- Local development must run the Angular frontend and Python backend as separate services with an explicit API base URL.
+- Cross-origin configuration, environment variables, and developer startup instructions must account for separate frontend/backend processes.
+
+#### ADR-011: Conversational refinement in MVP
+
+Decision: Include conversational refinement in the initial MVP workbench after the first structured onboarding plan is generated.
+
+Rationale: The Agentic Architect selected refinement from the start. HR users benefit from requesting targeted changes in natural language while keeping the main artifact structured and reviewable. The architecture must treat refinement as a controlled plan-revision workflow rather than an unrestricted chat: user instructions are inputs to a backend refinement use case, revised plans must pass schema validation, and every refinement must be recorded.
+
+Implications:
+
+- The workbench must include a plan-refinement conversation panel tied to a generated `runId` and current plan version.
+- Refinement prompts may request changes to plan sections, agenda, pending actions, risks, or draft communications.
+- The backend must apply refinements through the same domain/application boundary used for generation, with LLM/model access behind an adapter.
+- Refined plans must preserve structured JSON and Markdown output.
+- Every refinement must create an action-history entry and a plan revision record.
+- Refinement cannot approve, send, provision, or hide validation failures; human review remains mandatory.
+- Refinement must be available in pt-BR by default.
+
+#### ADR-012: Mock user context for MVP auditability
+
+Decision: The MVP will not implement real user authentication. It will use a fixed mock HR user context for audit, authorship, and action-history attribution.
+
+Default mock user:
+
+```json
+{
+  "userId": "demo-hr-001",
+  "username": "Joaquim",
+  "role": "HR_OPERATOR"
+}
+```
+
+Rationale: The MVP is a local/demo workbench and SSO/RBAC is explicitly future work. However, plan generation, conversational refinement, export, and audit history still need a consistent actor. A mock user context gives the domain and persistence model the required authorship fields without introducing login, passwords, JWT, sessions, identity-provider setup, or role-permission logic before MVP validation.
+
+Implications:
+
+- The frontend may display or send the mock user context for audit attribution.
+- The backend must treat the mock user as non-authenticated demo context, not as proof of identity.
+- SQLite records for runs, plan revisions, and action history must include the mock actor where relevant.
+- No password, JWT, session cookie, OAuth, SSO, or RBAC enforcement is required in the MVP.
+- Future authentication must replace the mock context behind an actor/user-context boundary without changing core onboarding domain behavior.
 
 ## 2. Stakeholders, Concerns, and Viewpoints
 
@@ -153,7 +271,7 @@ Implications:
 - HR user: enters collaborator data, reviews generated plan, approves or edits outputs.
 - Agentic Architect: reviews artifacts and architecture gates during AAMAD flow.
 - Future HRIS/ITSM/IAM/LMS/email/chat systems: explicitly out of MVP runtime scope.
-- LLM provider: configurable provider used by CrewAI through backend-managed credentials.
+- LLM provider: Google Gemini API used by CrewAI through backend-managed credentials.
 
 ### System Boundary
 
@@ -169,7 +287,7 @@ Inside MVP boundary:
 Outside MVP boundary:
 
 - Real user provisioning.
-- Email/chat sending.
+- External email/chat sending.
 - HRIS writes.
 - LMS enrollment.
 - Payroll or ERP workflows.
@@ -189,6 +307,7 @@ Angular + PrimeNG Workbench UI
   |-- Agent Progress
   |-- Plan Review
   |-- Draft Communications
+  |-- Conversational Refinement
   |-- Export View
   |
   v
@@ -204,11 +323,13 @@ Python API + CrewAI Orchestration Service
   |-- Communication Agent
   |-- Output Normalizer
   |-- Action History Logger
+  |-- Plan Revision Logger
   |
   v
 Local Storage
   |-- Catalogs
   |-- Generated Plans
+  |-- Plan Revisions
   |-- Run History
 ```
 
@@ -225,6 +346,7 @@ Responsibilities:
 - Display generation progress.
 - Present final plan sections.
 - Display draft communications as reviewable content.
+- Support conversational refinement against the current plan version.
 - Provide JSON/Markdown output access.
 
 Architectural notes:
@@ -238,6 +360,7 @@ Architectural notes:
 Responsibilities:
 
 - Receive frontend generation requests.
+- Receive conversational refinement requests.
 - Validate request shape before forwarding.
 - Call or invoke the Python orchestration workflow.
 - Return run status and generated plan.
@@ -258,7 +381,9 @@ Responsibilities:
 - Execute CrewAI agents in controlled sequence.
 - Validate specialist outputs.
 - Consolidate final plan.
+- Apply controlled conversational refinement to existing plans.
 - Persist run history.
+- Persist plan revisions.
 - Return structured JSON and Markdown.
 
 Architectural notes:
@@ -292,7 +417,7 @@ Responsibilities:
 
 Architectural notes:
 
-- MVP may use files or SQLite.
+- MVP uses SQLite for generated plans, action history, and generation metadata.
 - Do not store sensitive documents.
 - Avoid full PII in verbose logs.
 
@@ -313,7 +438,54 @@ This exceeds the generic template suggestion of three to four agents because the
 
 ### Collaboration Pattern
 
-Recommended process: coordinator-led sequential orchestration with parallelizable specialist tasks after intake validation.
+Recommended process: CrewAI Flow plus Crew orchestration.
+
+The MVP must define an `OnboardingFlow` as the deterministic process controller. The Flow receives the employee input, validates stage readiness, invokes specialist Crew/agent work, stores intermediate state, validates structured outputs, and emits the final onboarding plan. Specialist Crews/agents remain bounded analysis units; they do not own global process order or final approval logic.
+
+This strategy is selected from the precision/complexity decision framework in ADR-008:
+
+- High precision requires Flow-level sequencing, state management, schema checks, conditional routing, and reproducible output shape.
+- High complexity requires specialist agents for HR intake, compliance, IT provisioning, training, and communication.
+- The hybrid architecture keeps creative or analytical variation inside bounded specialist outputs, while Flow owns deterministic control and final quality gates.
+
+```text
+Onboarding Flow
+├── Start: receive collaborator data
+├── Validate required data
+├── Invoke HR Intake Agent
+├── Build shared onboarding case context
+├── Invoke Compliance Agent
+├── Invoke IT Provisioning Agent
+├── Invoke Training Agent
+├── Invoke Communication Agent
+├── Consolidate specialist outputs
+├── Validate consolidated result
+└── Generate final onboarding plan
+```
+
+Flow responsibilities:
+
+- Control the onboarding sequence and dependency graph.
+- Maintain run state, intermediate outputs, and status transitions.
+- Enforce required-data checks before specialist execution.
+- Validate specialist outputs against schemas before consolidation.
+- Record action history for every Flow step and agent invocation.
+- Handle retries, partial failures, and incomplete-section markers.
+- Produce the final JSON and Markdown plan through the output normalizer.
+
+Crew/agent responsibilities:
+
+- Execute bounded domain analysis from the shared case context and catalogs.
+- Return structured JSON matching the agent output contract.
+- Include assumptions, pending actions, risks, and rationale/source categories.
+- Avoid direct persistence, external side effects, and final plan assembly.
+
+CrewAI runtime organization:
+
+- `OnboardingFlow`: deterministic CrewAI Flow for process control.
+- `OnboardingAnalysisCrew`: Crew boundary for specialist analysis tasks.
+- Specialist agents: HR Intake, Compliance, IT Provisioning, Training, and Communication.
+- Coordinator logic: implemented primarily in the Flow/application service, not as an unconstrained autonomous agent.
 
 Baseline execution:
 
@@ -327,6 +499,62 @@ Baseline execution:
 8. Output Normalizer validates the final schema and renders Markdown.
 9. Action History Logger records run metadata and summaries.
 
+### Flow State and Routing Model
+
+The `OnboardingFlow` must carry an explicit state object across steps.
+
+Minimum state fields:
+
+- `runId`
+- `rawEmployeeInput`
+- `validationResult`
+- `employeeProfile`
+- `caseContext`
+- `specialistOutputs`
+- `communicationDrafts`
+- `finalPlan`
+- `planRevisions`
+- `status`
+- `errors`
+- `actionHistory`
+
+Required routing rules:
+
+- If required input is complete, route to full specialist analysis.
+- If required input is incomplete but usable, route to draft mode and mark missing data as pending actions.
+- If input is unusable, stop before specialist execution and return validation errors.
+- If a specialist output fails schema validation, retry once through schema repair or re-invocation.
+- If repair fails, preserve partial output, mark the section incomplete, and continue only when the final plan can honestly represent the gap.
+- Route Communication Agent after HR Intake, Compliance, IT Provisioning, and Training outputs are available.
+- Route final consolidation only after every accepted specialist output has a matching validation result and action-history entry.
+
+Implementation should use CrewAI Flow primitives such as start/listen/router decorators or their current equivalent in the selected CrewAI version. Build agents must verify current CrewAI documentation before coding, following the mandatory tooling rule in `project-context/1.define/mantadory-tools.md`.
+
+### Flow vs Crew Boundary Rules
+
+Use Flow for:
+
+- Required-field validation and draft-mode decisions.
+- State transitions and route selection.
+- Dependency ordering between specialist tasks.
+- Schema validation, retries, incomplete-section markers, and final assembly.
+- Persistence of run history and action summaries.
+
+Use Crew/agents for:
+
+- Profile synthesis from validated input.
+- Compliance, IT, training, and communication recommendations.
+- Rationale generation based on catalogs and case context.
+- Risk and pending-action identification within a bounded specialist domain.
+
+Do not use Crew/agents for:
+
+- Deciding global workflow order.
+- Persisting records directly.
+- Sending messages or provisioning access.
+- Approving, hiding, or deleting validation failures.
+- Producing final plan output without Flow-level normalization.
+
 ### Task Dependency Model
 
 | Task | Depends on | Output |
@@ -339,6 +567,7 @@ Baseline execution:
 | Generate communication drafts | Employee profile and specialist outputs | Draft messages |
 | Generate initial agenda | Employee profile, start date, and specialist outputs | Initial agenda |
 | Consolidate final plan | All specialist outputs | Final onboarding plan |
+| Refine generated plan | Current plan version and HR refinement instruction | New validated plan revision |
 | Log run history | All task results | Action/history log |
 
 ### Agent Output Contracts
@@ -370,6 +599,8 @@ The final plan must include:
 - `status`
 - `nextRecommendedActions`
 - `actionHistory`
+- `revisionNumber`
+- `revisionHistory`
 
 ### Error Handling
 
@@ -411,6 +642,7 @@ frontend/
       plan/
       agents/
       communications/
+      refinement/
       export/
       onboarding.routes.ts
       onboarding.service.ts
@@ -435,6 +667,8 @@ backend/
       policies/
     adapters/
       agents/
+        flows/
+        crews/
       catalogs/
       persistence/
       renderers/
@@ -454,7 +688,8 @@ backend/
 3. Consolidated plan review.
 4. Pending actions and risks.
 5. Draft communications.
-6. Export/copy output.
+6. Conversational refinement panel.
+7. Export/copy output.
 
 ### UX Constraints
 
@@ -463,6 +698,7 @@ backend/
 - Present outputs in dense, scan-friendly sections.
 - Mark AI-generated messages as drafts.
 - Show missing assumptions and required human review.
+- Keep conversational refinement secondary to the structured plan; chat output must update validated plan sections rather than becoming the plan itself.
 
 ### Accessibility
 
@@ -485,8 +721,8 @@ DDD responsibilities:
 
 Hexagonal responsibilities:
 
-- Define ports for catalog reads, run history persistence, agent orchestration, LLM/model access, Markdown rendering, and future external integrations.
-- Implement adapters for CrewAI, local JSON/YAML catalogs, SQLite or file persistence, generated Markdown, and API transport.
+- Define ports for catalog reads, run history persistence, Flow orchestration, specialist agent execution, LLM/model access, Markdown rendering, and future external integrations.
+- Implement adapters for CrewAI, local JSON/YAML catalogs, SQLite persistence, generated Markdown, and API transport.
 - Keep FastAPI or equivalent HTTP handlers as inbound adapters that translate requests into application commands and return response DTOs.
 - Keep outbound adapters replaceable so post-MVP integrations can be added without rewriting domain logic.
 
@@ -518,20 +754,39 @@ Response:
 - Final plan when complete.
 - Error summary when failed.
 
+#### `POST /api/onboarding/runs/{runId}/refine`
+
+Purpose: submit a conversational refinement request against the current generated plan.
+
+Request:
+
+- `runId`
+- Current plan version or revision id.
+- User refinement instruction in pt-BR by default.
+
+Response:
+
+- Updated run status.
+- New plan revision id.
+- Refined plan JSON and Markdown when complete.
+- Validation result and error summary when refinement fails.
+
 ### Python Service Interface
 
 Recommended endpoints or callable boundary:
 
 - `POST /generate-onboarding-plan`
 - `GET /runs/{run_id}`
+- `POST /runs/{run_id}/refine`
 
 The service must:
 
-- Own CrewAI execution.
+- Own CrewAI Flow and Crew execution.
 - Own catalog loading.
 - Own LLM provider configuration.
 - Return structured JSON.
 - Generate Markdown representation.
+- Validate, persist, and render refined plan revisions.
 
 ### Validation Strategy
 
@@ -539,7 +794,7 @@ Use schemas at three boundaries:
 
 1. Frontend input validation for immediate user feedback.
 2. API validation before backend orchestration.
-3. Python schema validation for agent outputs and final plan.
+3. Python schema validation for agent outputs, final plan, and refined plan revisions.
 
 Recommended schema technologies:
 
@@ -559,15 +814,11 @@ Rules:
 
 ### Persistence Strategy
 
-MVP acceptable options:
+MVP persistence:
 
-- File-based storage under a local data directory.
-- SQLite for runs, plans, and action history.
-
-Recommended for implementation:
-
-- Start with SQLite if the web workbench needs repeatable run retrieval.
+- Use SQLite for runs, plans, and action history.
 - Keep catalogs as repository-versioned JSON/YAML files.
+- Use generated Markdown/JSON files only as export artifacts, not as the primary run-history store.
 
 Future:
 
@@ -605,6 +856,7 @@ Fields:
 - `createdAt`
 - `updatedAt`
 - `status`
+- `createdBy`
 - `inputSnapshot`
 - `validationSummary`
 - `planId`
@@ -617,6 +869,7 @@ Fields:
 - `id`
 - `runId`
 - `timestamp`
+- `actor`
 - `agentName`
 - `actionType`
 - `status`
@@ -624,6 +877,16 @@ Fields:
 - `latencyMs`
 - `tokenUsage`
 - `errorSummary`
+
+#### MockUserContext
+
+Fields:
+
+- `userId`
+- `username`
+- `role`
+
+Default MVP value: `demo-hr-001` / `Joaquim` / `HR_OPERATOR`.
 
 #### OnboardingPlan
 
@@ -644,8 +907,26 @@ Fields:
 - `status`
 - `nextRecommendedActions`
 - `actionHistory`
+- `revisionNumber`
+- `revisionHistory`
 - `markdown`
 - `json`
+
+#### PlanRevision
+
+Fields:
+
+- `id`
+- `runId`
+- `createdAt`
+- `revisionNumber`
+- `source`
+- `createdBy`
+- `userInstruction`
+- `changeSummary`
+- `validationSummary`
+- `planSnapshot`
+- `markdownSnapshot`
 
 #### CatalogItem
 
@@ -683,18 +964,23 @@ Production target:
 2. Frontend validates basic field shape.
 3. Frontend calls the backend API.
 4. Python API validates request shape and creates OnboardingRun.
-5. Deterministic validator checks required fields and formats.
-6. HR Intake Agent synthesizes profile and missing-data summary.
-7. Coordinator constructs shared case context.
-8. Compliance Agent produces document/compliance output.
-9. IT Provisioning Agent produces access/equipment output.
-10. Training Agent produces training path output.
-11. Communication Agent drafts stakeholder messages.
-12. Coordinator consolidates final plan.
-13. Output Normalizer validates final plan schema.
+5. Application service starts the OnboardingFlow.
+6. OnboardingFlow runs deterministic required-field and format validation.
+7. OnboardingFlow invokes HR Intake Agent to synthesize profile and missing-data summary.
+8. OnboardingFlow builds shared onboarding case context.
+9. OnboardingFlow invokes Compliance, IT Provisioning, and Training specialist agents through the analysis Crew.
+10. OnboardingFlow validates each specialist output and records action history.
+11. OnboardingFlow invokes Communication Agent after specialist outputs are available.
+12. OnboardingFlow consolidates specialist outputs, initial agenda, executive summary, risks, and next actions.
+13. Output Normalizer validates final plan schema and renders Markdown.
 14. History Logger persists run and agent summaries.
 15. API returns plan JSON and Markdown.
 16. Workbench renders the plan for human review.
+17. HR user may submit a conversational refinement request.
+18. Backend validates the refinement request against the current plan version.
+19. Refinement use case applies the requested change through the backend LLM/model adapter.
+20. Output Normalizer validates the refined plan schema and renders updated Markdown.
+21. History Logger records the refinement action and creates a new plan revision.
 ```
 
 ### Correspondence Rules
@@ -704,6 +990,7 @@ Production target:
 - Every risk flag must appear in `pendingActions`, `riskFlags`, or both.
 - Every communication draft must be labeled as draft/requires review.
 - Every recommendation should be traceable to employee input, local catalog, or explicit agent assumption.
+- Every HR-triggered generation, refinement, or export action should include mock user attribution in the action history.
 
 ## 10. Deployment Architecture
 
@@ -714,11 +1001,11 @@ Developer machine
   |-- Angular + PrimeNG frontend
   |-- Python API + CrewAI service
   |-- Local catalogs
-  |-- SQLite or file storage
+  |-- SQLite storage for runs, plans, and action history
   |-- Environment variables for LLM provider credentials
 ```
 
-This is sufficient for MVP development and local demos.
+The Angular frontend and Python backend run as separate services from the start. This is sufficient for MVP development and local demos while preserving clear frontend/backend ownership boundaries.
 
 ### Future Hosted Deployment
 
@@ -738,22 +1025,27 @@ Deployment platform remains an open implementation choice. AWS App Runner is com
 
 Required environment variables:
 
-- LLM provider API key.
-- LLM model selection.
+- `LLM_PROVIDER=google-gemini`.
+- `LLM_MODEL=gemini-3.5-flash`.
+- Gemini API key or equivalent server-side credential.
 - Python service base URL.
 - Storage path or database URL.
 - Runtime mode: development/demo/production.
+- Default generated-message language: `pt-BR`.
+- Mock user id/name/role for local MVP audit attribution.
 
 ## 11. Security and Compliance Architecture
 
 ### Security Requirements
 
+- MVP user authentication is not implemented; the system uses a fixed mock HR user context only for audit attribution.
 - Keep LLM and service credentials server-side only.
 - Validate all input at frontend, API, and backend boundaries.
 - Treat user-provided job descriptions, policy text, or notes as untrusted input.
 - Do not store sensitive documents in MVP.
 - Avoid raw PII in debug logs.
 - Require human approval before any future external action.
+- Do not treat mock user context as authorization for production or shared environments.
 
 ### Compliance Boundaries
 
@@ -770,12 +1062,14 @@ The MVP must not:
 The system must record:
 
 - Run creation timestamp.
+- Mock actor/user context for HR-triggered actions.
 - Submitted input snapshot.
 - Validation result.
 - Agent name and action type.
 - Result summary.
 - Errors and retries.
 - Final plan generation status.
+- Refinement instruction, change summary, validation result, and plan revision id.
 
 ## 12. Monitoring and Observability
 
@@ -790,6 +1084,7 @@ Capture:
 - Generation error rate.
 - Retry count.
 - Log completeness.
+- Refinement latency and validation failures.
 
 ### Future Observability
 
@@ -817,6 +1112,9 @@ Unit tests:
 Integration tests:
 
 - Full generation flow with mocked LLM/CrewAI outputs.
+- Flow routing for complete input, draft-mode input, unusable input, specialist retry, and incomplete-section continuation.
+- Verification that Communication Agent waits for required upstream specialist outputs.
+- Conversational refinement creates a new plan revision, preserves schema validity, and records action history.
 - Specialist failure with partial plan.
 - Missing required fields draft-mode flow.
 - Export JSON/Markdown consistency.
@@ -837,6 +1135,8 @@ End-to-end tests:
 - Missing-data scenario produces explicit pending actions.
 - No generated message is presented as sent or approved.
 - Agent action history exists for each generation run.
+- Conversational refinement preserves schema validity and creates a new plan revision.
+- Mock user attribution is present for HR-triggered generation and refinement actions.
 
 ## 14. Requirement Traceability
 
@@ -849,16 +1149,19 @@ End-to-end tests:
 | PRD-P0-005 IT Checklist | IT Provisioning Agent, access/equipment catalogs, itChecklist |
 | PRD-P0-006 Training Path | Training Agent, training catalog, trainingPath |
 | PRD-P0-007 Communication Drafts | Communication Agent, message templates, communications |
-| PRD-P0-008 Final Onboarding Plan | Coordinator Agent, Output Normalizer, OnboardingPlan, executiveSummary, nextRecommendedActions |
-| PRD-P0-009 Agent Action History | Action History Logger, AgentAction, OnboardingRun |
+| PRD-P0-008 Final Onboarding Plan | OnboardingFlow, Coordinator logic, Output Normalizer, OnboardingPlan, executiveSummary, nextRecommendedActions |
+| PRD-P0-009 Agent Action History | OnboardingFlow, Action History Logger, AgentAction, OnboardingRun |
+| MVP conversational refinement decision | Conversational refinement panel, refine endpoint, PlanRevision, Output Normalizer, Action History Logger |
+| MVP mock user context decision | ADR-012, MockUserContext, createdBy fields, AgentAction actor, audit requirements |
 | PRD-P1-001 Status Tracking | Future status lifecycle, OnboardingRun, OnboardingPlan status |
-| PRD-P1-002 Editable Plan Workbench | Future editable UI, generated-vs-human diff |
+| PRD-P1-002 Editable Plan Workbench | MVP conversational refinement, future full editable UI, generated-vs-human diff |
 | PRD-P1-003 Configurable Catalogs | Future catalog admin/versioning |
 | PRD-P1-004 Export and Ticket Preparation | Export view, future ticket payload adapter |
 | PRD-P2-001 Approved Downstream Integrations | Future tool adapters with approval gates |
 | PRD-P2-002 Analytics Dashboard | Future analytics and reporting |
 | PRD-P2-003 Advanced Governance | Future governance reporting, prompt/model versioning |
 | PRD-P2-004 Multi-Language Support | Future language settings and localized templates |
+| CrewAI Lesson 2 architecture strategy | ADR-008, `OnboardingFlow`, `OnboardingAnalysisCrew`, Flow State and Routing Model, Flow vs Crew Boundary Rules |
 
 ## 15. Risks and Mitigations
 
@@ -872,11 +1175,13 @@ End-to-end tests:
 | Scope creep into HRIS replacement | Medium | Explicit MVP boundary and future integration section |
 | Inconsistent UI/API/backend schemas | Medium | Shared contract definitions and schema tests |
 | Cost variability from LLM calls | Medium | Token usage logging, bounded prompts, limited retries |
+| Crew-only implementation drift | High | ADR-008 requires Flow + Crew hybrid, with routing tests and Flow-owned validation/final assembly |
+| Mock user context mistaken for production auth | Medium | ADR-012 limits mock user to local/demo audit attribution; real authentication remains future work before shared or production use |
 
 ## 16. Assumptions
 
 1. The MVP will be web-first using Angular and PrimeNG unless the Agentic Architect redirects the frontend stack before Build.
-2. Generated user-facing content can initially be English or Portuguese based on implementation choice; the PRD leaves language as an open decision.
+2. Generated user-facing messages default to pt-BR for the MVP.
 3. Local catalogs are sufficient to demonstrate grounded recommendations.
 4. CrewAI can be run as a local Python service during MVP development.
 5. The MVP will use simulated or manually provided employee data.
@@ -884,11 +1189,7 @@ End-to-end tests:
 
 ## 17. Open Questions
 
-1. Should MVP generated messages default to Portuguese, English, or be configurable per collaborator?
-2. Should the first build use SQLite or file-based storage for run history?
-3. Should the initial workbench include conversational refinement, or reserve it for a later enhancement after the structured flow works?
-4. Which LLM provider and model should be the default for local development?
-5. Should the architecture prefer one process for local development or separate frontend and Python services from day one?
+None.
 
 ## 18. Future Work
 
@@ -898,8 +1199,8 @@ Deferred until after MVP validation:
 - ITSM ticket creation.
 - IAM provisioning.
 - LMS enrollment.
-- Email/chat sending.
-- SSO/RBAC.
+- External email/chat sending.
+- Real user authentication, SSO, and RBAC.
 - Catalog admin UI.
 - Analytics dashboard.
 - Production governance reports.
@@ -915,4 +1216,7 @@ Deferred until after MVP validation:
 - [x] Data contracts and run history requirements documented.
 - [x] Security and compliance boundaries documented.
 - [x] Testing and QA gates documented.
-- [x] Open questions and assumptions documented.
+- [x] Precision/complexity scoring documents why the MVP requires Flow + Crew.
+- [x] Flow state, routing, and Flow vs Crew boundaries documented.
+- [x] No SAD open questions remain.
+- [x] Mock user context and future authentication boundary documented.
