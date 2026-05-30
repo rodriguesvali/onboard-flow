@@ -16,6 +16,8 @@ Source artifacts:
 - `project-context/1.define/CONTEXT.md`
 - `.codex/aamad/templates/sad-template.md`
 - Agentic Architect Lesson 2 input: CrewAI Crews vs Flows architecture decision framework
+- Agentic Architect Lesson 3 input: CrewAI agent and task design best practices
+- Agentic Architect Lesson 4 input: CrewAI task-first LLM selection best practices
 - Agentic Architect model selection: `gemini-3.5-flash`
 - Agentic Architect MVP default decisions: pt-BR messages, SQLite persistence, separate frontend/backend services
 - Agentic Architect MVP scope decision: include conversational refinement from the start
@@ -35,6 +37,8 @@ Architecture constraint: do not add live HRIS, ITSM, IAM, LMS, email, payroll, E
 5. Traceability from day one: every generation run records input, agent activity, validation results, and output summaries.
 6. Integration-light MVP: external systems are deferred; exportable artifacts prove value before automation risk is introduced.
 7. Flow-led control with Crew-bounded reasoning: deterministic workflow control belongs to Flow; specialist reasoning belongs to bounded Crew/agent tasks with schemas and validation gates.
+8. Task-first agent design: agent quality depends primarily on precise, single-purpose tasks with explicit inputs, outputs, examples, and validation rules; RGB persona definitions support but do not replace task contracts.
+9. Task-first model selection: LLM choice must map to task capability needs, cost, latency, context, structured-output reliability, and tool/function-calling reliability instead of assuming one model is optimal for every agent.
 
 ### Core vs Future Feature Decision Framework
 
@@ -173,18 +177,23 @@ Implications:
 - No specialist Crew may bypass Flow-level validation, persistence, or final assembly.
 - Build-phase implementation must preserve the hybrid boundary even if the first MVP uses a single analysis Crew internally.
 
-#### ADR-009: Default LLM provider and model for MVP
+#### ADR-009: Task-first default LLM provider and model for MVP
 
-Decision: Use Google's Gemini API with `gemini-3.5-flash` as the default LLM model for local MVP development.
+Decision: Use Google's Gemini API with `gemini-3.5-flash` as the default Crew/model baseline for local MVP development, while keeping model assignment configurable per CrewAI crew, manager, agent, and task capability profile.
 
-Rationale: The Agentic Architect selected `gemini-3.5-flash` for the project. The MVP needs a fast, cost-conscious model suitable for repeated specialist-agent runs, structured drafting, and local demos. The architecture keeps the model behind the backend LLM/model access port so implementation can change providers or models later without changing domain logic.
+Rationale: The Agentic Architect selected `gemini-3.5-flash` for the project. The MVP needs a fast, cost-conscious model suitable for repeated specialist-agent runs, structured drafting, and local demos. Current Google documentation lists Gemini 3.5 Flash as a stable Gemini API model for agentic/coding tasks and identifies support for function calling and structured outputs in the Gemini model family. The architecture keeps models behind the backend LLM/model access port so implementation can change providers, add agent-specific overrides, or run A/B comparisons later without changing domain logic.
 
 Implications:
 
 - Backend configuration must default to `LLM_PROVIDER=google-gemini` and `LLM_MODEL=gemini-3.5-flash`.
 - Gemini credentials must remain server-side and must never be exposed to the Angular frontend.
 - CrewAI agents and Flow orchestration must receive model access only through backend configuration or an adapter.
+- The default Crew LLM is the baseline; agent-level overrides are allowed only when task tests show a quality, reliability, latency, context, tool-calling, or cost reason.
+- If a hierarchical Crew process is introduced later, `manager_llm` must be configured explicitly and selected for reasoning and validation quality rather than inherited accidentally.
+- Tool-heavy or schema-heavy tasks must prefer models and settings with reliable function calling, parameter extraction, and structured output behavior.
+- Routine extraction, formatting, and rendering should not require premium or high-latency model settings unless fixture tests prove the baseline fails.
 - Tests should mock the LLM/model access port rather than requiring live Gemini calls.
+- Build preparation must run representative task fixtures before adding complex model-switching rules.
 - Build preparation must verify the current Gemini API and CrewAI configuration syntax before coding, following `project-context/1.define/mantadory-tools.md`.
 
 #### ADR-010: MVP implementation defaults
@@ -241,6 +250,37 @@ Implications:
 - SQLite records for runs, plan revisions, and action history must include the mock actor where relevant.
 - No password, JWT, session cookie, OAuth, SSO, or RBAC enforcement is required in the MVP.
 - Future authentication must replace the mock context behind an actor/user-context boundary without changing core onboarding domain behavior.
+
+#### ADR-013: RGB agent definitions and task-first Crew design
+
+Decision: Define every CrewAI specialist with a precise RGB persona and implement every agent invocation as a single-purpose task with explicit inputs, structured outputs, and handoff rules.
+
+Rationale: The Agentic Architect's Lesson 3 guidance states that effective CrewAI design depends most on disciplined task design, with agent persona definition used to stabilize decisions and collaboration. OnboardFlow AI has high precision and high complexity requirements, so vague personas or overloaded tasks would increase drift, rework, and schema failure risk.
+
+Implications:
+
+- Each CrewAI agent config must include `role`, `goal`, and `backstory` fields that are specific to onboarding operations, not generic business-analysis labels.
+- Agent seniority/expertise level must match task risk: compliance, IT provisioning, and coordination use expert-level personas; routine drafting remains specialist but constrained by templates and review gates.
+- Each task must have one primary purpose and one primary output contract.
+- Research, synthesis, checklist generation, communication drafting, consolidation, and validation must remain separate tasks or deterministic Flow steps.
+- Task descriptions must include purpose, input sources, scope boundaries, output schema, quality criteria, and downstream consumer.
+- Build-phase implementation must favor structured Markdown/JSON task definitions or typed config files that can be tested and reused across crews.
+- Agent backstories must describe domain expertise, working style, and values only insofar as they improve consistent task execution; they must not expand system authority or MVP scope.
+
+#### ADR-014: Capability-mapped multi-model readiness
+
+Decision: Define model capability profiles for the CrewAI runtime even if the initial MVP maps every profile to the approved default `gemini-3.5-flash`.
+
+Rationale: The Agentic Architect's Lesson 4 guidance warns against "one model fits all" design and recommends matching model choices to role, task complexity, tools, cost, speed, context window, and reliability. For this MVP, premature multi-provider switching would add avoidable complexity, but hardcoding one global model would make later optimization fragile. Capability profiles provide a simple middle path: start with one tested default, measure real task behavior, then selectively override the small number of agents or tasks that need different model strengths.
+
+Implications:
+
+- The backend LLM/model access port must expose named profiles such as `default`, `reasoning`, `efficient`, `creative`, `tool_calling`, and `refinement`.
+- In MVP configuration, all profiles may initially resolve to `gemini-3.5-flash` unless Build validation identifies a better split.
+- Agent and task configuration must reference model profiles or explicit model ids through the adapter, not hardcoded provider calls.
+- Model choice must be logged with every agent action: provider, model id, profile, latency, token usage where available, retry count, and validation result.
+- The Build phase must avoid elaborate dynamic routing until fixture results show a concrete benefit.
+- Future enterprise/private deployment can replace one or more profiles with open-source or private-infrastructure models without changing domain logic.
 
 ## 2. Stakeholders, Concerns, and Viewpoints
 
@@ -436,6 +476,113 @@ The MVP uses the six PRD-defined agents:
 
 This exceeds the generic template suggestion of three to four agents because the approved PRD explicitly defines six core agents and maps them to the MVP scope.
 
+### Agent Design Standard
+
+CrewAI agents must be configured as narrow specialists using RGB: role, goal, and backstory. The role grounds the agent in a real onboarding profession or domain. The goal states the expected outcome and quality bar. The backstory stabilizes expertise, working style, and values without adding product scope or runtime authority.
+
+Agent definitions:
+
+| Agent | Expertise level | Role | Goal | Backstory emphasis |
+| --- | --- | --- | --- | --- |
+| Onboarding Coordinator | Expert | Onboarding operations architect specializing in cross-functional new-hire readiness | Produce a coherent, reviewable onboarding plan from validated specialist outputs while preserving schema validity, traceability, and human approval | Works as a process controller and quality reviewer; values completeness, explicit gaps, and audit-safe decisions |
+| HR Intake | Expert | People operations intake specialist for employee data quality and onboarding profile synthesis | Convert raw employee input into a usable profile, missing-data summary, assumptions, and draft-mode readiness decision | Works carefully with incomplete HR data; prefers explicit pending actions over guessing |
+| Compliance | Expert | HR compliance onboarding specialist for documents, acknowledgements, and policy readiness | Identify required documents, compliance tasks, rationale/source categories, risks, and pending actions from catalogs and profile context | Treats compliance output as advisory and reviewable; flags uncertainty clearly |
+| IT Provisioning | Expert | IT onboarding provisioning planner for accounts, equipment, access, and first-day readiness | Generate role- and work-mode-aware IT checklist items, critical tasks, provisioning draft content, and risks | Prioritizes first-day readiness, least-privilege assumptions, and clear owner/action wording |
+| Training | Specialist | Learning and enablement planner for role-based onboarding paths | Produce sequenced mandatory and recommended trainings with category, timing, rationale, and dependencies | Balances institutional, security, compliance, and role-specific learning without overloading the first days |
+| Communication | Specialist | Employee onboarding communications writer for HR, manager, IT, and collaborator audiences | Draft clear pt-BR messages from approved case context and specialist outputs, labeled as human-review drafts | Writes audience-specific, operational messages; never presents drafts as sent or approved |
+
+Design rules:
+
+- Prefer specialist agents over generic agents; do not add a general "business analyst" or "writer" agent for MVP work.
+- Avoid redundant agent responsibilities; every agent must own a distinct domain and handoff.
+- Keep the Coordinator as Flow/application-service logic plus bounded consolidation tasks, not an unconstrained autonomous manager.
+- Bind agents to approved tools and data sources only: validated employee input, local catalogs, shared case context, current plan version, and schema definitions.
+- Record the agent role and task id in action history so outputs remain traceable to the responsible specialist and task contract.
+
+### Task Design Standard
+
+The implementation must spend most design effort on task contracts. Each CrewAI task must have a single purpose, explicit input set, structured output, and downstream consumer.
+
+Task contract fields:
+
+- `taskId`
+- `purpose`
+- `agent`
+- `inputSources`
+- `scope`
+- `excludedScope`
+- `outputSchema`
+- `qualityCriteria`
+- `downstreamConsumer`
+- `failureBehavior`
+
+Task design rules:
+
+- Do not merge research, analysis, planning, communication drafting, and validation into one "god task".
+- Keep deterministic validation, routing, retries, and final schema checks in Flow/application logic.
+- Include examples or fixtures for representative complete-input, draft-mode, and specialist-failure scenarios during Build.
+- Use machine-readable JSON for agent outputs and Markdown only as rendered human-facing output.
+- Align every task description with its expected deliverable; a task that drafts communications must not also approve, send, or provision anything.
+- Start with sequential task execution unless a dependency-free parallel branch is proven safe by the Flow dependency model.
+- Refine agent and task definitions through test outputs: prototype, test representative cases, analyze drift/failures, update RGB/task specs, and retest in the Crew.
+
+### Specialist Task Contracts
+
+| Task | Purpose | Agent/owner | Inputs | Structured output | Downstream consumer |
+| --- | --- | --- | --- | --- | --- |
+| `validate_employee_input` | Determine whether input is complete, draft-usable, or unusable | Flow/application service | Raw employee input and input schema | `ValidationResult` | HR Intake task and API response |
+| `synthesize_employee_profile` | Produce profile, assumptions, and missing-data summary | HR Intake | Validation result and raw employee input | `EmployeeProfileOutput` | Shared case context |
+| `generate_document_checklist` | Identify required documents and compliance pending actions | Compliance | Employee profile and document/compliance catalogs | `ComplianceOutput` | Final plan consolidation and Communication |
+| `generate_it_checklist` | Identify access, account, equipment, and first-day IT tasks | IT Provisioning | Employee profile, access catalog, equipment catalog | `ITProvisioningOutput` | Final plan consolidation and Communication |
+| `generate_training_path` | Build sequenced initial learning path | Training | Employee profile and training catalog | `TrainingOutput` | Final plan consolidation and Communication |
+| `draft_stakeholder_messages` | Draft reviewable pt-BR messages by audience | Communication | Employee profile, specialist outputs, message templates | `CommunicationOutput` | Final plan consolidation |
+| `consolidate_onboarding_plan` | Assemble final plan without hiding gaps | Flow/application service with bounded Coordinator logic | All validated specialist outputs and validation results | `OnboardingPlan` | Output Normalizer |
+| `refine_plan_revision` | Apply one HR refinement instruction to the current plan version | Refinement use case with relevant specialist task as needed | Current plan version, user instruction, validation rules | `PlanRevision` plus validated `OnboardingPlan` | Workbench and history logger |
+
+### Model Selection Standard
+
+Model assignment must be task-first and profile-based. The default MVP model is `gemini-3.5-flash`, but the architecture must not assume that every future agent or task has the same model needs.
+
+Capability profiles:
+
+| Profile | Primary use | Initial MVP model | Override trigger |
+| --- | --- | --- | --- |
+| `default` | Baseline specialist analysis and drafting | `gemini-3.5-flash` | Replace only if default quality, cost, or latency fails fixture targets |
+| `reasoning` | Coordination, consolidation, conflict detection, high-stakes policy reasoning | `gemini-3.5-flash` | Upgrade when complex scenarios show missed dependencies, weak risk reasoning, or poor final-plan coherence |
+| `efficient` | Routine extraction, formatting, schema repair, and low-risk transformations | `gemini-3.5-flash` | Downgrade to a cheaper/faster model when schema validity remains stable in tests |
+| `creative` | Audience-specific communication tone and pt-BR message quality | `gemini-3.5-flash` | Switch only if communication fixtures show tone, clarity, or localization issues |
+| `tool_calling` | Tool-heavy catalog lookup, function calling, and structured parameter extraction | `gemini-3.5-flash` | Switch when tool-call accuracy or parameter extraction is unreliable |
+| `refinement` | Conversational plan revision with schema preservation | `gemini-3.5-flash` | Upgrade when refinement requests produce drift, hidden validation failures, or invalid revisions |
+
+Agent-to-model mapping:
+
+| Agent/task area | Required capability | MVP profile |
+| --- | --- | --- |
+| Onboarding Coordinator and final consolidation | Reasoning, conflict detection, structured synthesis | `reasoning` |
+| HR Intake | Extraction, validation support, profile synthesis | `default` |
+| Compliance | High-precision policy/document reasoning | `reasoning` |
+| IT Provisioning | Tool/catalog matching, structured checklist generation | `tool_calling` |
+| Training | Catalog matching and sequencing | `default` |
+| Communication | Controlled tone, audience adaptation, pt-BR drafting | `creative` |
+| Schema repair and Markdown rendering support | Low-risk formatting and normalization | `efficient` |
+| Conversational refinement | Instruction following, targeted edits, schema preservation | `refinement` |
+
+CrewAI configuration rules:
+
+- Set a cost-effective default Crew LLM for the baseline path.
+- Let agents inherit the default unless the task contract explicitly requires a capability profile override.
+- If using `Process.hierarchical`, configure `manager_llm` deliberately for manager reasoning and validation; do not rely on accidental inheritance.
+- If using tool-heavy agents, verify the model's function-calling and parameter-extraction behavior with representative catalog/tool fixtures.
+- Keep model selection visible in agent/task configuration files so reviews can detect unnecessary premium overrides or cross-provider churn.
+- Use temperature and generation settings by task type: low variance for schemas/checklists, moderate controlled style for communications, and deterministic settings for repair/normalization where supported.
+
+Validation rules:
+
+- Run baseline fixtures with the default model before adding overrides.
+- Compare candidate overrides using real OnboardFlow scenarios, not generic benchmarks alone.
+- Evaluate schema validity, missing pending actions, risk detection, communication quality, latency, token usage, retry rate, and human review notes.
+- Promote a model override only when it improves a measured outcome enough to justify added cost and operational complexity.
+
 ### Collaboration Pattern
 
 Recommended process: CrewAI Flow plus Crew orchestration.
@@ -576,6 +723,7 @@ All agent outputs must be parseable as structured JSON before consolidation.
 
 Required common fields:
 
+- `taskId`
 - `agentName`
 - `status`
 - `summary`
@@ -583,6 +731,9 @@ Required common fields:
 - `pendingActions`
 - `risks`
 - `assumptions`
+- `inputSources`
+- `qualityChecks`
+- `handoffNotes`
 
 The final plan must include:
 
@@ -871,6 +1022,10 @@ Fields:
 - `timestamp`
 - `actor`
 - `agentName`
+- `taskId`
+- `modelProvider`
+- `modelName`
+- `modelProfile`
 - `actionType`
 - `status`
 - `resultSummary`
@@ -1027,6 +1182,12 @@ Required environment variables:
 
 - `LLM_PROVIDER=google-gemini`.
 - `LLM_MODEL=gemini-3.5-flash`.
+- Optional `LLM_PROFILE_DEFAULT_MODEL=gemini-3.5-flash`.
+- Optional `LLM_PROFILE_REASONING_MODEL=gemini-3.5-flash`.
+- Optional `LLM_PROFILE_EFFICIENT_MODEL=gemini-3.5-flash`.
+- Optional `LLM_PROFILE_CREATIVE_MODEL=gemini-3.5-flash`.
+- Optional `LLM_PROFILE_TOOL_CALLING_MODEL=gemini-3.5-flash`.
+- Optional `LLM_PROFILE_REFINEMENT_MODEL=gemini-3.5-flash`.
 - Gemini API key or equivalent server-side credential.
 - Python service base URL.
 - Storage path or database URL.
@@ -1069,6 +1230,7 @@ The system must record:
 - Result summary.
 - Errors and retries.
 - Final plan generation status.
+- Model provider, model id, model profile, token usage where available, and latency for each LLM-backed task.
 - Refinement instruction, change summary, validation result, and plan revision id.
 
 ## 12. Monitoring and Observability
@@ -1080,6 +1242,7 @@ Capture:
 - Generation latency.
 - Per-agent latency where available.
 - Token usage where available.
+- Per-model-profile latency, token usage, retry count, and schema validation failure rate where available.
 - Schema validation failures.
 - Generation error rate.
 - Retry count.
@@ -1115,6 +1278,8 @@ Integration tests:
 - Flow routing for complete input, draft-mode input, unusable input, specialist retry, and incomplete-section continuation.
 - Verification that Communication Agent waits for required upstream specialist outputs.
 - Conversational refinement creates a new plan revision, preserves schema validity, and records action history.
+- Model profile mapping resolves through the LLM/model access port and records provider/model/profile in action history.
+- A/B fixture harness can compare default vs candidate model profiles without changing domain logic.
 - Specialist failure with partial plan.
 - Missing required fields draft-mode flow.
 - Export JSON/Markdown consistency.
@@ -1137,6 +1302,8 @@ End-to-end tests:
 - Agent action history exists for each generation run.
 - Conversational refinement preserves schema validity and creates a new plan revision.
 - Mock user attribution is present for HR-triggered generation and refinement actions.
+- RGB agent definitions and single-purpose task contracts are covered by configuration tests or fixture-based validation.
+- LLM selection remains profile-based, measurable, and free of hardcoded provider calls outside the LLM adapter.
 
 ## 14. Requirement Traceability
 
@@ -1153,6 +1320,8 @@ End-to-end tests:
 | PRD-P0-009 Agent Action History | OnboardingFlow, Action History Logger, AgentAction, OnboardingRun |
 | MVP conversational refinement decision | Conversational refinement panel, refine endpoint, PlanRevision, Output Normalizer, Action History Logger |
 | MVP mock user context decision | ADR-012, MockUserContext, createdBy fields, AgentAction actor, audit requirements |
+| CrewAI Lesson 3 agent/task design strategy | ADR-013, Agent Design Standard, Task Design Standard, Specialist Task Contracts, Agent Output Contracts |
+| CrewAI Lesson 4 LLM selection strategy | ADR-009, ADR-014, Model Selection Standard, LLM/model access port, model-profile action-history fields, model-profile QA coverage |
 | PRD-P1-001 Status Tracking | Future status lifecycle, OnboardingRun, OnboardingPlan status |
 | PRD-P1-002 Editable Plan Workbench | MVP conversational refinement, future full editable UI, generated-vs-human diff |
 | PRD-P1-003 Configurable Catalogs | Future catalog admin/versioning |
@@ -1172,9 +1341,12 @@ End-to-end tests:
 | Unsafe autonomy | High | No live provisioning or sending in MVP, future approval gates |
 | Long-running agent requests | Medium | Run status endpoint and optional job-based execution |
 | Low trust in recommendations | Medium | Rationale fields, source categories, assumptions, visible agent activity |
+| Vague agent personas or overloaded tasks | High | RGB agent definitions, single-purpose task contracts, explicit handoffs, structured output schemas |
 | Scope creep into HRIS replacement | Medium | Explicit MVP boundary and future integration section |
 | Inconsistent UI/API/backend schemas | Medium | Shared contract definitions and schema tests |
 | Cost variability from LLM calls | Medium | Token usage logging, bounded prompts, limited retries |
+| One-model-for-everything drift | Medium | Capability profiles, measured overrides, per-task model logging, and fixture-based model comparison |
+| Premature model-switching complexity | Medium | Default baseline first, explicit override triggers, no dynamic routing until tests justify it |
 | Crew-only implementation drift | High | ADR-008 requires Flow + Crew hybrid, with routing tests and Flow-owned validation/final assembly |
 | Mock user context mistaken for production auth | Medium | ADR-012 limits mock user to local/demo audit attribution; real authentication remains future work before shared or production use |
 
@@ -1186,6 +1358,7 @@ End-to-end tests:
 4. CrewAI can be run as a local Python service during MVP development.
 5. The MVP will use simulated or manually provided employee data.
 6. Human review is mandatory before any generated communication or future external action.
+7. `gemini-3.5-flash` remains the Agentic Architect-approved default unless Build validation or a later review gate changes the model plan.
 
 ## 17. Open Questions
 
@@ -1220,3 +1393,5 @@ Deferred until after MVP validation:
 - [x] Flow state, routing, and Flow vs Crew boundaries documented.
 - [x] No SAD open questions remain.
 - [x] Mock user context and future authentication boundary documented.
+- [x] Lesson 3 agent RGB and task-first design rules documented.
+- [x] Lesson 4 task-first LLM selection, model profiles, and validation rules documented.
