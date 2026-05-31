@@ -1,0 +1,354 @@
+<main class="workbench-shell">
+  <header class="workbench-header">
+    <div>
+      <p class="eyebrow">OnboardFlow AI</p>
+      <h1>Gerar plano de onboarding</h1>
+    </div>
+    <p-tag severity="secondary" value="Draft review workflow" />
+  </header>
+
+  <p-message
+    class="status-message"
+    role="status"
+    [severity]="statusSeverity()"
+    [text]="statusText()"
+  />
+
+  @if (isRunning()) {
+    <p-progressbar mode="indeterminate" [showValue]="false" aria-label="Generating plan" />
+  }
+
+  @if (viewModel().state !== 'done') {
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="run()" novalidate>
+      <section class="form-section" aria-labelledby="profile-heading">
+        <div class="section-heading">
+          <h2 id="profile-heading">Dados do colaborador</h2>
+          <span>Campos essenciais para montar o plano inicial.</span>
+        </div>
+
+        <div class="field-grid">
+          <label>
+            <span>Nome completo</span>
+            <input
+              pInputText
+              inputId="fullName"
+              formControlName="fullName"
+              [invalid]="showRequiredError('fullName')"
+            />
+            @if (showRequiredError('fullName')) {
+              <small>Informe o nome completo.</small>
+            }
+          </label>
+
+          <label>
+            <span>Email</span>
+            <input
+              pInputText
+              inputId="email"
+              type="email"
+              formControlName="email"
+              [invalid]="showRequiredError('email') || showEmailError()"
+            />
+            @if (showRequiredError('email')) {
+              <small>Informe o email.</small>
+            } @else if (showEmailError()) {
+              <small>Informe um email valido.</small>
+            }
+          </label>
+
+          <label>
+            <span>Cargo</span>
+            <input
+              pInputText
+              inputId="role"
+              formControlName="role"
+              [invalid]="showRequiredError('role')"
+            />
+            @if (showRequiredError('role')) {
+              <small>Informe o cargo.</small>
+            }
+          </label>
+
+          <label>
+            <span>Departamento</span>
+            <input
+              pInputText
+              inputId="department"
+              formControlName="department"
+              [invalid]="showRequiredError('department')"
+            />
+            @if (showRequiredError('department')) {
+              <small>Informe o departamento.</small>
+            }
+          </label>
+
+          <label>
+            <span>Gestor direto</span>
+            <input
+              pInputText
+              inputId="directManager"
+              formControlName="directManager"
+              [invalid]="showRequiredError('directManager')"
+            />
+            @if (showRequiredError('directManager')) {
+              <small>Informe o gestor direto.</small>
+            }
+          </label>
+
+          <label>
+            <span>Data de inicio</span>
+            <p-datepicker
+              inputId="startDate"
+              formControlName="startDate"
+              dateFormat="yy-mm-dd"
+              [showIcon]="true"
+              [fluid]="true"
+              [invalid]="showRequiredError('startDate')"
+            />
+            @if (showRequiredError('startDate')) {
+              <small>Informe a data de inicio.</small>
+            }
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section" aria-labelledby="work-heading">
+        <div class="section-heading">
+          <h2 id="work-heading">Contexto de trabalho</h2>
+          <span>Use notas para capturar dependencias ou excecoes.</span>
+        </div>
+
+        <div class="field-grid">
+          <label>
+            <span>Tipo de contrato</span>
+            <p-select
+              inputId="employmentType"
+              formControlName="employmentType"
+              [options]="employmentTypes"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Selecione"
+              [fluid]="true"
+              [invalid]="showRequiredError('employmentType')"
+            />
+            @if (showRequiredError('employmentType')) {
+              <small>Selecione o tipo de contrato.</small>
+            }
+          </label>
+
+          <label>
+            <span>Modelo de trabalho</span>
+            <p-select
+              inputId="workMode"
+              formControlName="workMode"
+              [options]="workModes"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Selecione"
+              [fluid]="true"
+              [invalid]="showRequiredError('workMode')"
+            />
+            @if (showRequiredError('workMode')) {
+              <small>Selecione o modelo de trabalho.</small>
+            }
+          </label>
+
+          <label>
+            <span>Senioridade</span>
+            <p-select
+              inputId="seniority"
+              formControlName="seniority"
+              [options]="seniorityLevels"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Opcional"
+              [showClear]="true"
+              [fluid]="true"
+            />
+          </label>
+
+          <label>
+            <span>Localidade</span>
+            <input pInputText inputId="location" formControlName="location" />
+          </label>
+
+          <label>
+            <span>Regiao contratual</span>
+            <input pInputText inputId="contractRegion" formControlName="contractRegion" />
+          </label>
+
+          <label>
+            <span>Idioma preferencial</span>
+            <input pInputText inputId="preferredLanguage" formControlName="preferredLanguage" />
+          </label>
+        </div>
+
+        <div class="notes-grid">
+          <label>
+            <span>Equipamentos necessarios</span>
+            <textarea
+              pTextarea
+              inputId="equipmentNeeds"
+              formControlName="equipmentNeeds"
+              rows="4"
+            ></textarea>
+          </label>
+
+          <label>
+            <span>Notas de acessos especiais</span>
+            <textarea
+              pTextarea
+              inputId="specialAccessNotes"
+              formControlName="specialAccessNotes"
+              rows="4"
+            ></textarea>
+          </label>
+        </div>
+      </section>
+
+      <footer class="action-bar">
+        <p-button
+          type="button"
+          label="Reset"
+          icon="pi pi-refresh"
+          severity="secondary"
+          variant="outlined"
+          [disabled]="isRunning()"
+          (onClick)="reset()"
+        />
+        <p-button
+          type="submit"
+          label="Run"
+          icon="pi pi-play"
+          [loading]="isRunning()"
+          [disabled]="isRunning()"
+        />
+      </footer>
+    </form>
+  } @else if (result(); as plan) {
+    <section class="results-view" aria-labelledby="results-heading">
+      <div class="results-header">
+        <div>
+          <p class="eyebrow">Plano gerado</p>
+          <h2 id="results-heading">{{ plan.employeeProfile.fullName }}</h2>
+          <p>
+            {{ plan.employeeProfile.role }} · {{ plan.employeeProfile.department }} ·
+            {{ plan.employeeProfile.workMode }}
+          </p>
+        </div>
+        <div class="results-actions">
+          <p-tag severity="success" [value]="plan.status" />
+          <p-button
+            type="button"
+            label="Reset"
+            icon="pi pi-refresh"
+            severity="secondary"
+            variant="outlined"
+            (onClick)="reset()"
+          />
+        </div>
+      </div>
+
+      <p-card>
+        <h3>Resumo executivo</h3>
+        <p>{{ plan.executiveSummary }}</p>
+      </p-card>
+
+      <div class="result-grid">
+        <p-card>
+          <h3>Perfil do colaborador</h3>
+          <dl class="profile-list">
+            <div>
+              <dt>Gestor</dt>
+              <dd>{{ plan.employeeProfile.directManager }}</dd>
+            </div>
+            <div>
+              <dt>Inicio</dt>
+              <dd>{{ plan.employeeProfile.startDate }}</dd>
+            </div>
+            <div>
+              <dt>Departamento</dt>
+              <dd>{{ plan.employeeProfile.department }}</dd>
+            </div>
+          </dl>
+        </p-card>
+
+        <p-card>
+          <h3>Proximas acoes recomendadas</h3>
+          <ul>
+            @for (action of plan.nextRecommendedActions; track action) {
+              <li>{{ action }}</li>
+            }
+          </ul>
+        </p-card>
+      </div>
+
+      <div class="result-grid">
+        <ng-container
+          [ngTemplateOutlet]="itemList"
+          [ngTemplateOutletContext]="{
+            title: 'Documentos obrigatorios',
+            items: plan.requiredDocuments,
+          }"
+        />
+        <ng-container
+          [ngTemplateOutlet]="itemList"
+          [ngTemplateOutletContext]="{ title: 'Checklist de TI', items: plan.itChecklist }"
+        />
+        <ng-container
+          [ngTemplateOutlet]="itemList"
+          [ngTemplateOutletContext]="{ title: 'Trilha de treinamento', items: plan.trainingPath }"
+        />
+        <ng-container
+          [ngTemplateOutlet]="itemList"
+          [ngTemplateOutletContext]="{ title: 'Agenda inicial', items: plan.initialAgenda }"
+        />
+        <ng-container
+          [ngTemplateOutlet]="itemList"
+          [ngTemplateOutletContext]="{ title: 'Pendencias', items: plan.pendingActions }"
+        />
+        <ng-container
+          [ngTemplateOutlet]="itemList"
+          [ngTemplateOutletContext]="{ title: 'Riscos sinalizados', items: plan.riskFlags }"
+        />
+      </div>
+
+      <section class="communications" aria-labelledby="communications-heading">
+        <h3 id="communications-heading">Comunicados draft</h3>
+        <div class="communication-grid">
+          @for (communication of plan.communications; track communication.subject) {
+            <p-card>
+              <div class="card-heading-row">
+                <h4>{{ communication.subject }}</h4>
+                <p-tag severity="warn" value="Draft" />
+              </div>
+              <p class="audience">Audience: {{ communication.audience }}</p>
+              <p>{{ communication.body }}</p>
+              <p class="review-note">Requer revisao humana antes de qualquer envio.</p>
+            </p-card>
+          }
+        </div>
+      </section>
+    </section>
+  }
+</main>
+
+<ng-template #itemList let-title="title" let-items="items">
+  <p-card>
+    <h3>{{ title }}</h3>
+    <ul class="result-list">
+      @for (item of items; track item.title) {
+        <li>
+          <div class="card-heading-row">
+            <strong>{{ item.title }}</strong>
+            <p-tag [severity]="statusSeverityFor(item)" [value]="statusLabel(item)" />
+          </div>
+          <span class="owner">Owner: {{ item.ownerRole }}</span>
+          @if (item.rationale) {
+            <p>{{ item.rationale }}</p>
+          }
+        </li>
+      }
+    </ul>
+  </p-card>
+</ng-template>

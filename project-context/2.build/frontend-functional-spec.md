@@ -380,16 +380,16 @@ Manual smoke test:
 
 Update this checklist after each commit that changes the frontend workflow:
 
-- [ ] Route path still matches this spec.
-- [ ] Form fields still match PRD/SAD required and optional employee input.
-- [ ] FSM states and transitions still match this spec.
-- [ ] Service stubs still expose `startRun` and `getRunStatus`.
-- [ ] Mock result still maps to SAD final-plan sections.
-- [ ] Status banner text still avoids unsafe autonomy claims.
-- [ ] Results view still labels communications as drafts.
-- [ ] PrimeNG usage was checked against the mandatory PrimeNG MCP Server before coding changes.
-- [ ] Tests or manual smoke notes were updated for changed behavior.
-- [ ] Any spec drift was either corrected in code or recorded for Agentic Architect review.
+- [x] Route path still matches this spec.
+- [x] Form fields still match PRD/SAD required and optional employee input.
+- [x] FSM states and transitions still match this spec.
+- [x] Service stubs still expose `startRun` and `getRunStatus`.
+- [x] Mock result still maps to SAD final-plan sections.
+- [x] Status banner text still avoids unsafe autonomy claims.
+- [x] Results view still labels communications as drafts.
+- [x] PrimeNG usage was checked against the mandatory PrimeNG MCP Server before coding changes.
+- [x] Tests or manual smoke notes were updated for changed behavior.
+- [x] Any spec drift was either corrected in code or recorded for Agentic Architect review.
 
 ## 18. Open Questions
 

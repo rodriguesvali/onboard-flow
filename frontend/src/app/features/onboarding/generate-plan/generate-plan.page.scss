@@ -1,0 +1,235 @@
+.workbench-shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0 48px;
+}
+
+.workbench-header,
+.results-header,
+.action-bar,
+.card-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.workbench-header {
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #536171;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1;
+}
+
+h2 {
+  margin-bottom: 4px;
+  font-size: 1.25rem;
+}
+
+h3 {
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+h4 {
+  margin-bottom: 0;
+  font-size: 0.95rem;
+}
+
+.status-message {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.form-grid,
+.results-view {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.form-section,
+.action-bar,
+.results-header {
+  border: 1px solid #dfe4ea;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 36px rgba(31, 41, 51, 0.06);
+}
+
+.form-section {
+  padding: 22px;
+}
+
+.section-heading {
+  margin-bottom: 18px;
+}
+
+.section-heading span,
+.results-header p,
+.owner,
+.audience,
+.review-note {
+  color: #64748b;
+}
+
+.field-grid,
+.notes-grid,
+.result-grid,
+.communication-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.field-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.notes-grid,
+.result-grid,
+.communication-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: #334155;
+  font-weight: 700;
+}
+
+input,
+textarea,
+:host ::ng-deep .p-datepicker,
+:host ::ng-deep .p-select {
+  width: 100%;
+}
+
+small {
+  color: #b42318;
+  font-weight: 600;
+}
+
+.action-bar {
+  justify-content: flex-end;
+  padding: 16px;
+}
+
+.results-header {
+  padding: 22px;
+}
+
+.results-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.profile-list div {
+  display: grid;
+  gap: 4px;
+}
+
+dt {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+dd {
+  margin: 0;
+}
+
+ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.result-list {
+  display: grid;
+  gap: 14px;
+  padding-left: 0;
+  list-style: none;
+}
+
+.result-list li {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.result-list li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.communications {
+  display: grid;
+  gap: 12px;
+}
+
+.review-note {
+  margin-bottom: 0;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .field-grid,
+  .notes-grid,
+  .result-grid,
+  .communication-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .workbench-shell {
+    width: min(100% - 20px, 1180px);
+    padding-top: 20px;
+  }
+
+  .workbench-header,
+  .results-header,
+  .action-bar,
+  .card-heading-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .action-bar,
+  .results-actions {
+    width: 100%;
+  }
+
+  :host ::ng-deep .action-bar .p-button,
+  :host ::ng-deep .results-actions .p-button {
+    width: 100%;
+  }
+}
