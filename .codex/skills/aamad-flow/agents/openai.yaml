@@ -1,0 +1,4 @@
+interface:
+  display_name: "AAMAD Flow"
+  short_description: "Continue project-local AAMAD Flow"
+  default_prompt: "Use $aamad-flow to continue this project's AAMAD Flow from the current review gate."

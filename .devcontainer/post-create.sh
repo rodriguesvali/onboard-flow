@@ -58,3 +58,7 @@ fi
 if [ -f backend/pyproject.toml ] || [ -f backend/setup.py ]; then
   ${SUDO} python -m pip install -e backend
 fi
+
+if ! command -v codex >/dev/null 2>&1; then
+  curl -fsSL https://chatgpt.com/codex/install.sh | sh
+fi
