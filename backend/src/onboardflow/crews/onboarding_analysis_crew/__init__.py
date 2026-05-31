@@ -1,0 +1,2 @@
+"""Onboarding analysis crew configuration."""
+

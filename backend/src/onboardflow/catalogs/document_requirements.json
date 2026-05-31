@@ -1,0 +1,21 @@
+[
+  {
+    "title": "Documento de identificacao",
+    "applies_to": ["all"],
+    "owner_role": "RH",
+    "rationale": "Necessario para conferencia admissional e cadastro interno."
+  },
+  {
+    "title": "Comprovante de residencia",
+    "applies_to": ["all"],
+    "owner_role": "Colaborador",
+    "rationale": "Necessario para completar o cadastro do colaborador."
+  },
+  {
+    "title": "Termo de confidencialidade",
+    "applies_to": ["engineering", "finance", "hr"],
+    "owner_role": "RH",
+    "rationale": "Recomendado para funcoes com acesso a dados sensiveis."
+  }
+]
+

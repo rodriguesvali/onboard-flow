@@ -18,6 +18,8 @@ Approved Define artifacts:
 - `project-context/1.define/prd.md`
 - `project-context/1.define/sad.md`
 
+The current stage is ready for the next Build step under AAMAD Flow after backend implementation approval.
+
 The frontend Build implementation review gate is completed and approved under AAMAD Flow.
 
 Approved Build preparation artifacts:
@@ -29,6 +31,13 @@ Approved Build implementation artifacts:
 - `project-context/2.build/frontend.md`
 - `project-context/2.build/frontend-functional-spec.md` Spec Sync checklist update
 - `frontend/` Angular + PrimeNG scaffold and Generate Onboarding Plan implementation
+- `project-context/2.build/backend-implementation-plan.md`
+- `project-context/2.build/backend.md`
+- `backend/` Python FastAPI + CrewAI boundary scaffold and Generate/Run/Refine implementation
+
+Pending Agentic Architect review:
+
+No Build implementation artifact is currently pending review.
 
 Approved role refinements:
 
@@ -36,7 +45,7 @@ Approved role refinements:
 - `.codex/aamad/agents/backend-eng.md`
 - `.codex/aamad/agents/integration-eng.md`
 
-No active review gate is pending. The next AAMAD Build step requires Agentic Architect direction before producing another artifact or implementation change.
+Backend implementation review gate is approved. The smallest valid next step is Agentic Architect direction for the next Build activity, likely Angular-to-FastAPI integration via `@integration.eng` or a redirected backend-hardening task.
 
 ## Review Gate
 
@@ -51,3 +60,5 @@ Current frontend functional specification review gate is approved as recorded in
 Current frontend, backend, and integration persona technology-alignment review gates are approved as recorded in `.codex/aamad/review-log.md`.
 
 Current frontend implementation review gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current backend implementation review gate is approved as recorded in `.codex/aamad/review-log.md`.

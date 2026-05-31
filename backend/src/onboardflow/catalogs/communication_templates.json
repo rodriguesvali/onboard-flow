@@ -1,0 +1,22 @@
+[
+  {
+    "audience": "collaborator",
+    "subject": "Boas-vindas ao onboarding",
+    "body": "Ola {full_name}, seu plano inicial de onboarding foi preparado para revisao do RH. Revise as pendencias indicadas e aguarde as proximas orientacoes."
+  },
+  {
+    "audience": "manager",
+    "subject": "Preparacao para novo colaborador",
+    "body": "Ola {direct_manager}, o plano de onboarding de {full_name} esta pronto para revisao. Confira agenda inicial, acessos e pendencias antes do inicio."
+  },
+  {
+    "audience": "it",
+    "subject": "Preparacao de acessos e equipamentos",
+    "body": "Time de TI, preparar acessos e equipamentos para {full_name}, cargo {role}, departamento {department}, modelo {work_mode}."
+  },
+  {
+    "audience": "hr",
+    "subject": "Revisao humana do plano de onboarding",
+    "body": "RH deve revisar documentos, comunicados e pendencias do plano antes de qualquer envio ou acao externa."
+  }
+]

@@ -1,0 +1,36 @@
+validate_employee_input:
+  description: Validate employee input and summarize missing assumptions as structured JSON.
+  expected_output: JSON with taskId, agentName, status, summary, items, pendingActions, risks, assumptions, inputSources, and qualityChecks.
+  agent: hr_intake_agent
+
+generate_document_checklist:
+  description: Generate required documents and compliance pending actions from local catalogs.
+  expected_output: JSON matching the common specialist output contract.
+  agent: compliance_agent
+  context:
+    - validate_employee_input
+
+generate_it_checklist:
+  description: Generate IT access, equipment, and first-day readiness tasks from local catalogs.
+  expected_output: JSON matching the common specialist output contract.
+  agent: it_provisioning_agent
+  context:
+    - validate_employee_input
+
+generate_training_path:
+  description: Generate a sequenced training path from local catalogs.
+  expected_output: JSON matching the common specialist output contract.
+  agent: training_agent
+  context:
+    - validate_employee_input
+
+draft_stakeholder_messages:
+  description: Draft pt-BR stakeholder messages after profile, compliance, IT, and training outputs are available.
+  expected_output: JSON matching the common specialist output contract with communication drafts marked as drafts.
+  agent: communication_agent
+  context:
+    - validate_employee_input
+    - generate_document_checklist
+    - generate_it_checklist
+    - generate_training_path
+

@@ -1,0 +1,27 @@
+[
+  {
+    "title": "Conta corporativa",
+    "departments": ["all"],
+    "owner_role": "TI",
+    "rationale": "Conta base para acesso a e-mail, calendario e ferramentas internas."
+  },
+  {
+    "title": "Notebook configurado",
+    "departments": ["all"],
+    "owner_role": "TI",
+    "rationale": "Equipamento necessario antes do primeiro dia."
+  },
+  {
+    "title": "Repositorio de codigo",
+    "departments": ["engineering", "technology", "engenharia"],
+    "owner_role": "TI",
+    "rationale": "Acesso necessario para funcoes de engenharia."
+  },
+  {
+    "title": "CRM",
+    "departments": ["sales", "comercial"],
+    "owner_role": "TI",
+    "rationale": "Acesso necessario para funcoes comerciais."
+  }
+]
+

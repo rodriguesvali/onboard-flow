@@ -1,0 +1,27 @@
+[
+  {
+    "title": "Boas-vindas e cultura",
+    "departments": ["all"],
+    "owner_role": "RH",
+    "rationale": "Treinamento inicial obrigatorio para todos os colaboradores."
+  },
+  {
+    "title": "Seguranca da informacao",
+    "departments": ["all"],
+    "owner_role": "TI",
+    "rationale": "Treinamento obrigatorio para uso seguro dos sistemas internos."
+  },
+  {
+    "title": "Processo de engenharia",
+    "departments": ["engineering", "technology", "engenharia"],
+    "owner_role": "Gestor",
+    "rationale": "Ajuda o colaborador a entender fluxo de desenvolvimento e qualidade."
+  },
+  {
+    "title": "Playbook comercial",
+    "departments": ["sales", "comercial"],
+    "owner_role": "Gestor",
+    "rationale": "Ajuda o colaborador a seguir a abordagem comercial padronizada."
+  }
+]
+
