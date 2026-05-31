@@ -18,11 +18,17 @@ Approved Define artifacts:
 - `project-context/1.define/prd.md`
 - `project-context/1.define/sad.md`
 
-The current stage is frontend Build implementation review under AAMAD Flow.
+The frontend Build implementation review gate is completed and approved under AAMAD Flow.
 
 Approved Build preparation artifacts:
 
 - `project-context/2.build/frontend-functional-spec.md`
+
+Approved Build implementation artifacts:
+
+- `project-context/2.build/frontend.md`
+- `project-context/2.build/frontend-functional-spec.md` Spec Sync checklist update
+- `frontend/` Angular + PrimeNG scaffold and Generate Onboarding Plan implementation
 
 Approved role refinements:
 
@@ -30,13 +36,7 @@ Approved role refinements:
 - `.codex/aamad/agents/backend-eng.md`
 - `.codex/aamad/agents/integration-eng.md`
 
-Before coding starts, the project should complete the approved Build entry step, including tool availability validation, implementation sequencing, and any required role refinement.
-
-Pending Agentic Architect review:
-
-- `project-context/2.build/frontend.md`
-- `project-context/2.build/frontend-functional-spec.md` Spec Sync checklist update
-- `frontend/` Angular + PrimeNG scaffold and Generate Onboarding Plan implementation
+No active review gate is pending. The next AAMAD Build step requires Agentic Architect direction before producing another artifact or implementation change.
 
 ## Review Gate
 
@@ -50,4 +50,4 @@ Current frontend functional specification review gate is approved as recorded in
 
 Current frontend, backend, and integration persona technology-alignment review gates are approved as recorded in `.codex/aamad/review-log.md`.
 
-Current frontend implementation review gate is pending Agentic Architect decision.
+Current frontend implementation review gate is approved as recorded in `.codex/aamad/review-log.md`.
