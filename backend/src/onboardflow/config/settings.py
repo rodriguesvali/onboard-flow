@@ -1,6 +1,7 @@
 from functools import lru_cache
+from typing import Literal
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,6 +12,12 @@ class Settings(BaseSettings):
     api_cors_origins: str = "http://localhost:4200,http://127.0.0.1:4200"
     mock_hr_user_id: str = "mock-hr-user"
     mock_hr_user_name: str = "Mock HR User"
+    onboarding_flow_mode: Literal["deterministic", "crewai"] = Field(
+        default="deterministic",
+        validation_alias=AliasChoices("ONBOARDING_FLOW_MODE", "ONBOARDFLOW_FLOW_MODE"),
+    )
+    crewai_verbose: bool = False
+    crewai_temperature: float = 0.2
     llm_provider: str = "google-gemini"
     llm_model: str = "gemini-3.5-flash"
     llm_profile_default_model: str = Field(default="gemini-3.5-flash")
@@ -34,8 +41,15 @@ class Settings(BaseSettings):
             "refinement": self.llm_profile_refinement_model,
         }
 
+    def crewai_model_name(self, profile: str = "default") -> str:
+        model = self.model_profile_map().get(profile, self.llm_model)
+        if "/" in model:
+            return model
+        if self.llm_provider == "google-gemini":
+            return f"gemini/{model}"
+        return model
+
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

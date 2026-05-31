@@ -1,6 +1,10 @@
 from dataclasses import dataclass
 
-from onboardflow.application.ports import MarkdownRendererPort, OnboardingFlowPort, RunRepositoryPort
+from onboardflow.application.ports import (
+    MarkdownRendererPort,
+    OnboardingFlowPort,
+    RunRepositoryPort,
+)
 from onboardflow.config.settings import Settings
 from onboardflow.domain.models import (
     AgentAction,
@@ -26,7 +30,11 @@ def validate_employee_input(employee: EmployeeOnboardingInput) -> ValidationResu
     issues: list[ValidationIssue] = []
     if employee.start_date.isoformat() < "2026-01-01":
         issues.append(
-            ValidationIssue(field="startDate", message="Data de inicio parece invalida.", severity="error")
+            ValidationIssue(
+                field="startDate",
+                message="Data de inicio parece invalida.",
+                severity="error",
+            )
         )
     if employee.work_mode.lower() == "presencial" and not employee.location:
         issues.append(
@@ -87,7 +95,24 @@ class OnboardingApplicationService:
             self.repository.save(run)
             return StartRunResponse(runId=run.run_id, status="running")
 
-        specialist_outputs, plan = self.flow.execute(run, employee, validation)
+        try:
+            specialist_outputs, plan = self.flow.execute(run, employee, validation)
+        except Exception as exc:
+            run.status = RunStatus.ERROR
+            run.message = "Nao foi possivel gerar o plano de onboarding."
+            run.error_message = "Falha na execucao dos agentes de onboarding."
+            run.updated_at = utc_now()
+            run.action_history.append(
+                self._action(
+                    run.run_id,
+                    "flow_execution_failed",
+                    f"{exc.__class__.__name__}: {str(exc)[:300]}",
+                    validation_result="error",
+                )
+            )
+            self.repository.save(run)
+            return StartRunResponse(runId=run.run_id, status="running")
+
         for output in specialist_outputs:
             run.action_history.append(
                 self._action(
@@ -106,7 +131,9 @@ class OnboardingApplicationService:
         run.status = RunStatus.DONE
         run.message = "Plano de onboarding gerado para revisao humana."
         run.updated_at = utc_now()
-        run.action_history.append(self._action(run.run_id, "plan_normalized", "Plano JSON validado."))
+        run.action_history.append(
+            self._action(run.run_id, "plan_normalized", "Plano JSON validado.")
+        )
         self.repository.save(run)
         return StartRunResponse(runId=run.run_id, status="running")
 
@@ -157,7 +184,9 @@ class OnboardingApplicationService:
             validationResult=ValidationResult(status="complete"),
         )
 
-    def _apply_refinement(self, plan: OnboardingPlanResult, instruction: str) -> OnboardingPlanResult:
+    def _apply_refinement(
+        self, plan: OnboardingPlanResult, instruction: str
+    ) -> OnboardingPlanResult:
         data = plan.model_dump(mode="json", by_alias=True)
         data["pendingActions"].append(
             ResultItem(
@@ -184,7 +213,9 @@ class OnboardingApplicationService:
         model_profile: str | None = None,
         validation_result: str | None = None,
     ) -> AgentAction:
-        model_name = self.settings.model_profile_map().get(model_profile or "default", self.settings.llm_model)
+        model_name = self.settings.model_profile_map().get(
+            model_profile or "default", self.settings.llm_model
+        )
         return AgentAction(
             runId=run_id,
             actorId=self.actor.actor_id,

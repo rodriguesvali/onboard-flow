@@ -4,7 +4,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from onboardflow.adapters.catalogs.json_catalog import JsonCatalogAdapter
-from onboardflow.adapters.crewai.orchestrator import DeterministicOnboardingFlow
+from onboardflow.adapters.crewai.orchestrator import build_onboarding_flow
 from onboardflow.adapters.markdown.renderer import MarkdownRenderer
 from onboardflow.adapters.persistence.database import get_session
 from onboardflow.adapters.persistence.repository import SqlAlchemyRunRepository
@@ -22,7 +22,7 @@ def get_application_service(
 ) -> Generator[OnboardingApplicationService, None, None]:
     catalog = JsonCatalogAdapter()
     repository = SqlAlchemyRunRepository(session)
-    flow = DeterministicOnboardingFlow(catalog)
+    flow = build_onboarding_flow(catalog, settings)
     renderer = MarkdownRenderer()
     yield OnboardingApplicationService(repository, flow, renderer, settings)
 

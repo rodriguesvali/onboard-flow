@@ -135,6 +135,7 @@ class SpecialistOutput(CamelModel):
     items: list[ResultItem] = Field(default_factory=list)
     pending_actions: list[ResultItem] = Field(default_factory=list, alias="pendingActions")
     risks: list[ResultItem] = Field(default_factory=list)
+    communications: list[CommunicationDraft] = Field(default_factory=list)
     assumptions: list[str] = Field(default_factory=list)
     input_sources: list[str] = Field(default_factory=list, alias="inputSources")
     quality_checks: list[str] = Field(default_factory=list, alias="qualityChecks")

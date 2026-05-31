@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 def client(tmp_path) -> Generator[TestClient, None, None]:
     database_url = f"sqlite:///{tmp_path / 'test.db'}"
     os.environ["DATABASE_URL"] = database_url
+    os.environ["ONBOARDFLOW_FLOW_MODE"] = "deterministic"
 
     from onboardflow.config.settings import get_settings
 
