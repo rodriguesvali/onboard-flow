@@ -1,0 +1,54 @@
+{
+  "name": "OnboardFlow AI Dev Container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace/onboard-flow",
+  "runServices": [
+    "app"
+  ],
+  "shutdownAction": "stopCompose",
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "24"
+    }
+  },
+  "forwardPorts": [
+    4200,
+    8000
+  ],
+  "portsAttributes": {
+    "4200": {
+      "label": "Angular"
+    },
+    "8000": {
+      "label": "FastAPI"
+    }
+  },
+  "containerEnv": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1",
+    "AAMAD_ADAPTER": "crewai",
+    "AAMAD_TARGET_RUNTIME": "crewai"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode-remote.remote-containers",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "Angular.ng-template",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker",
+        "openai.chatgpt",
+        "rodriguesvali.git-revision-graph"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh"
+}

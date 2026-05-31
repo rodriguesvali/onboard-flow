@@ -1,0 +1,11 @@
+name: onboard-flow
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace/onboard-flow:cached
+    working_dir: /workspace/onboard-flow
+    command: sleep infinity

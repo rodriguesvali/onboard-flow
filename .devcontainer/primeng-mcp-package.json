@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "dependencies": {
+    "@primeng/mcp": "21.1.8"
+  },
+  "overrides": {
+    "@modelcontextprotocol/sdk": "1.29.0"
+  }
+}
