@@ -18,10 +18,11 @@ Included:
 - Lightweight finite-state machine with `idle`, `running`, `done`, and `error`.
 - Mocked `OnboardingRunService` with `startRun` and `getRunStatus`.
 - Structured results view covering employee profile, executive summary, required documents, IT list, training path, initial agenda, communications in draft state, pending actions, risk flags, and next recommended actions.
-- Reset behavior for form/result cleanup.
+- Review actions in the generated results view: approve plan and request adjustments with required feedback.
+- Reset behavior for form/result/review cleanup.
 - Light/dark theme choice with `Claro` and `Escuro` controls.
 - Mock error path through `specialAccessNotes` containing `mock-error`.
-- Unit/component tests for app shell, FSM, mocked service, validation behavior, and successful result rendering.
+- Unit/component tests for app shell, FSM, mocked service, validation behavior, successful result rendering, and review decision actions.
 
 Excluded per approved scope:
 
@@ -29,6 +30,7 @@ Excluded per approved scope:
 - Real CrewAI execution.
 - Authentication.
 - Conversational refinement.
+- Backend-persisted approval workflow.
 - Export implementation.
 - Full editable workbench.
 
@@ -67,6 +69,7 @@ Build-preparation dependency:
 - Configured PrimeNG `darkModeSelector` as `.app-dark`.
 - Theme selection toggles `.app-dark` on the document root and persists `onboardflow-theme` in `localStorage`.
 - Form grid fields align to the top and no longer stretch neighboring inputs when validation messages increase row height.
+- Generated-result review decisions are session-local in this frontend slice; no communications are sent and no downstream system action is triggered.
 
 ## 4. Validation Evidence
 
@@ -81,9 +84,10 @@ npx prettier --check .
 Results:
 
 - Build passed.
-- Tests passed: 4 files, 11 tests.
+- Tests passed: 4 files, 13 tests.
 - Prettier check passed.
-- Screenshot capture passed with Playwright Chromium after installing browser runtime dependencies in the container.
+- Screenshot capture passed previously with Playwright Chromium after installing browser runtime dependencies in the container.
+- Updated review-action screenshots are pending Agentic Architect review or a follow-up capture step.
 
 Screenshots saved:
 
@@ -119,4 +123,5 @@ Review focus:
 
 - Confirm the route and UI scope match the approved frontend functional specification.
 - Confirm the mocked service boundary is acceptable before backend/integration work.
+- Confirm whether session-local review decisions are sufficient for this frontend slice or should move to backend persistence in the next step.
 - Confirm whether `project-context/2.build/setup.md` should be generated next by `@project.mgr`.

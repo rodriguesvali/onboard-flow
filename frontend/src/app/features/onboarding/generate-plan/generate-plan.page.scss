@@ -121,14 +121,18 @@ h4 {
 
 .form-section,
 .action-bar,
-.results-header {
+.results-header,
+.review-panel,
+.review-decision {
   border: 1px solid var(--app-panel-border);
   border-radius: 8px;
   background: var(--app-panel);
   box-shadow: var(--app-shadow);
 }
 
-.form-section {
+.form-section,
+.review-panel,
+.review-decision {
   padding: 22px;
 }
 
@@ -138,6 +142,7 @@ h4 {
 
 .section-heading span,
 .results-header p,
+.review-decision p,
 .owner,
 .audience,
 .review-note {
@@ -193,10 +198,29 @@ small {
   padding: 22px;
 }
 
-.results-actions {
+.results-actions,
+.review-panel-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
+}
+
+.results-actions {
+  flex-wrap: wrap;
+}
+
+.review-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.review-panel .section-heading {
+  margin-bottom: 0;
+}
+
+.review-decision p {
+  margin-bottom: 0;
 }
 
 .profile-list {
@@ -280,7 +304,8 @@ ul {
 
   .header-actions,
   .action-bar,
-  .results-actions {
+  .results-actions,
+  .review-panel-actions {
     width: 100%;
   }
 
@@ -295,7 +320,8 @@ ul {
 
   .theme-option,
   :host ::ng-deep .action-bar .p-button,
-  :host ::ng-deep .results-actions .p-button {
+  :host ::ng-deep .results-actions .p-button,
+  :host ::ng-deep .review-panel-actions .p-button {
     width: 100%;
   }
 }

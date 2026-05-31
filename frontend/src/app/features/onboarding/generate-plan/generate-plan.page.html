@@ -266,6 +266,22 @@
           <p-tag severity="success" [value]="planStatusLabel(plan.status)" />
           <p-button
             type="button"
+            label="Aprovar plano"
+            icon="pi pi-check"
+            severity="success"
+            [disabled]="reviewDecision() === 'approved'"
+            (onClick)="approvePlan()"
+          />
+          <p-button
+            type="button"
+            label="Solicitar ajustes"
+            icon="pi pi-comment"
+            severity="warn"
+            variant="outlined"
+            (onClick)="openChangeRequest()"
+          />
+          <p-button
+            type="button"
             label="Limpar"
             icon="pi pi-refresh"
             severity="secondary"
@@ -274,6 +290,52 @@
           />
         </div>
       </div>
+
+      @if (reviewFeedbackOpen()) {
+        <section class="review-panel" aria-labelledby="review-feedback-heading">
+          <div class="section-heading">
+            <h3 id="review-feedback-heading">Solicitar ajustes no plano</h3>
+            <span>Registre a orientacao que deve guiar a proxima revisao.</span>
+          </div>
+          <label>
+            <span>Orientacao de ajuste</span>
+            <textarea
+              pTextarea
+              inputId="reviewFeedback"
+              [formControl]="reviewFeedback"
+              rows="4"
+              [invalid]="showReviewFeedbackError()"
+            ></textarea>
+            @if (showReviewFeedbackError()) {
+              <small>Informe o ajuste solicitado.</small>
+            }
+          </label>
+          <div class="review-panel-actions">
+            <p-button
+              type="button"
+              label="Registrar solicitacao"
+              icon="pi pi-send"
+              severity="warn"
+              (onClick)="submitChangeRequest()"
+            />
+          </div>
+        </section>
+      }
+
+      @if (reviewDecision() === 'approved') {
+        <section class="review-decision" aria-label="Decisao de revisao">
+          <h3>Plano aprovado</h3>
+          <p>
+            Decisao registrada nesta sessao. Comunicados, acessos e provisionamentos continuam sem
+            envio automatico.
+          </p>
+        </section>
+      } @else if (reviewDecision() === 'changes_requested') {
+        <section class="review-decision" aria-label="Decisao de revisao">
+          <h3>Ajustes solicitados</h3>
+          <p>{{ reviewFeedback.value }}</p>
+        </section>
+      }
 
       <p-card>
         <h3>Resumo executivo</h3>

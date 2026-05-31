@@ -136,5 +136,108 @@ describe('GeneratePlanPage', () => {
       'Plano de onboarding gerado para revisao humana.',
     );
     expect(fixture.nativeElement.textContent).toContain('Ana Silva');
+    expect(fixture.nativeElement.textContent).toContain('Aprovar plano');
+    expect(fixture.nativeElement.textContent).toContain('Solicitar ajustes');
+  });
+
+  it('lets the user approve a generated plan in the review view', async () => {
+    const fixture = TestBed.createComponent(GeneratePlanPage);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as unknown as {
+      form: {
+        setValue(value: Record<string, string | Date | null>): void;
+      };
+      run(): void;
+    };
+
+    component.form.setValue({
+      fullName: 'Ana Silva',
+      email: 'ana.silva@example.com',
+      role: 'Engenheira de Software',
+      department: 'Engenharia',
+      directManager: 'Joaquim',
+      startDate: new Date('2026-06-15T00:00:00'),
+      employmentType: 'Tempo integral',
+      workMode: 'Remoto',
+      seniority: '',
+      location: '',
+      contractRegion: '',
+      preferredLanguage: '',
+      equipmentNeeds: '',
+      specialAccessNotes: '',
+    });
+    component.run();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const approveButton = Array.from(compiled.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Aprovar plano'),
+    ) as HTMLButtonElement;
+    approveButton.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Plano aprovado nesta sessao de revisao.');
+    expect(fixture.nativeElement.textContent).toContain('Nenhuma comunicacao foi enviada.');
+  });
+
+  it('requires feedback before registering requested changes', async () => {
+    const fixture = TestBed.createComponent(GeneratePlanPage);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as unknown as {
+      form: {
+        setValue(value: Record<string, string | Date | null>): void;
+      };
+      run(): void;
+      reviewFeedback: { setValue(value: string): void };
+    };
+
+    component.form.setValue({
+      fullName: 'Ana Silva',
+      email: 'ana.silva@example.com',
+      role: 'Engenheira de Software',
+      department: 'Engenharia',
+      directManager: 'Joaquim',
+      startDate: new Date('2026-06-15T00:00:00'),
+      employmentType: 'Tempo integral',
+      workMode: 'Remoto',
+      seniority: '',
+      location: '',
+      contractRegion: '',
+      preferredLanguage: '',
+      equipmentNeeds: '',
+      specialAccessNotes: '',
+    });
+    component.run();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const requestButton = Array.from(compiled.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Solicitar ajustes'),
+    ) as HTMLButtonElement;
+    requestButton.click();
+    fixture.detectChanges();
+
+    const submitButton = Array.from(compiled.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Registrar solicitacao'),
+    ) as HTMLButtonElement;
+    submitButton.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Informe o ajuste solicitado.');
+
+    component.reviewFeedback.setValue('Revisar prazos da agenda inicial.');
+    submitButton.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Solicitacao de ajustes registrada nesta sessao de revisao.',
+    );
+    expect(fixture.nativeElement.textContent).toContain('Revisar prazos da agenda inicial.');
   });
 });

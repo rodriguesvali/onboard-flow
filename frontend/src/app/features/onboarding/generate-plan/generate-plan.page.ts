@@ -21,6 +21,7 @@ interface SelectOption {
 }
 
 type ThemeMode = 'light' | 'dark';
+type ReviewDecision = 'pending' | 'approved' | 'changes_requested';
 
 type GeneratePlanForm = FormGroup<{
   fullName: FormControl<string>;
@@ -64,6 +65,13 @@ export class GeneratePlanPage {
   protected readonly viewModel = signal(initialGeneratePlanViewModel);
   protected readonly submitted = signal(false);
   protected readonly themeMode = signal<ThemeMode>(this.readInitialThemeMode());
+  protected readonly reviewDecision = signal<ReviewDecision>('pending');
+  protected readonly reviewFeedbackOpen = signal(false);
+  protected readonly reviewFeedbackSubmitted = signal(false);
+  protected readonly reviewFeedback = new FormControl('', {
+    nonNullable: true,
+    validators: [Validators.required],
+  });
   protected readonly isDarkTheme = computed(() => this.themeMode() === 'dark');
 
   protected readonly employmentTypes: SelectOption[] = [
@@ -112,6 +120,10 @@ export class GeneratePlanPage {
   protected readonly isRunning = computed(() => this.viewModel().state === 'running');
   protected readonly result = computed(() => this.viewModel().result);
   protected readonly statusSeverity = computed(() => {
+    if (this.viewModel().state === 'done' && this.reviewDecision() === 'changes_requested') {
+      return 'warn';
+    }
+
     switch (this.viewModel().state) {
       case 'done':
         return 'success';
@@ -122,11 +134,21 @@ export class GeneratePlanPage {
     }
   });
   protected readonly statusText = computed(() => {
+    if (this.viewModel().state === 'done') {
+      switch (this.reviewDecision()) {
+        case 'approved':
+          return 'Plano aprovado nesta sessao de revisao. Nenhuma comunicacao foi enviada.';
+        case 'changes_requested':
+          return 'Solicitacao de ajustes registrada nesta sessao de revisao.';
+        case 'pending':
+        default:
+          return 'Plano de onboarding gerado para revisao humana.';
+      }
+    }
+
     switch (this.viewModel().state) {
       case 'running':
         return 'Gerando plano de onboarding...';
-      case 'done':
-        return 'Plano de onboarding gerado para revisao humana.';
       case 'error':
         return 'Nao foi possivel gerar o plano de onboarding. Revise o formulario e tente novamente.';
       case 'idle':
@@ -169,6 +191,7 @@ export class GeneratePlanPage {
                   result: response.result!,
                 }),
               );
+              this.resetReviewState();
               return;
             }
 
@@ -200,6 +223,31 @@ export class GeneratePlanPage {
     });
   }
 
+  protected approvePlan(): void {
+    this.reviewDecision.set('approved');
+    this.reviewFeedbackOpen.set(false);
+    this.reviewFeedbackSubmitted.set(false);
+    this.reviewFeedback.reset('');
+  }
+
+  protected openChangeRequest(): void {
+    this.reviewDecision.set('pending');
+    this.reviewFeedbackOpen.set(true);
+    this.reviewFeedbackSubmitted.set(false);
+  }
+
+  protected submitChangeRequest(): void {
+    this.reviewFeedbackSubmitted.set(true);
+
+    if (this.reviewFeedback.invalid) {
+      this.reviewFeedback.markAsTouched();
+      return;
+    }
+
+    this.reviewDecision.set('changes_requested');
+    this.reviewFeedbackOpen.set(false);
+  }
+
   protected reset(): void {
     this.form.reset({
       fullName: '',
@@ -218,6 +266,7 @@ export class GeneratePlanPage {
       specialAccessNotes: '',
     });
     this.submitted.set(false);
+    this.resetReviewState();
     this.viewModel.update((current) => transitionGeneratePlan(current, { type: 'RESET_CLICKED' }));
   }
 
@@ -263,6 +312,13 @@ export class GeneratePlanPage {
     return labels[audience];
   }
 
+  protected showReviewFeedbackError(): boolean {
+    return (
+      this.reviewFeedback.hasError('required') &&
+      (this.reviewFeedback.touched || this.reviewFeedbackSubmitted())
+    );
+  }
+
   protected statusSeverityFor(item: ResultItem): 'info' | 'success' | 'warn' | 'danger' {
     switch (item.status) {
       case 'done':
@@ -296,6 +352,13 @@ export class GeneratePlanPage {
       equipmentNeeds: optional(value.equipmentNeeds),
       specialAccessNotes: optional(value.specialAccessNotes),
     };
+  }
+
+  private resetReviewState(): void {
+    this.reviewDecision.set('pending');
+    this.reviewFeedbackOpen.set(false);
+    this.reviewFeedbackSubmitted.set(false);
+    this.reviewFeedback.reset('');
   }
 
   private readInitialThemeMode(): ThemeMode {
