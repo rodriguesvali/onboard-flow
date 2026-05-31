@@ -4,6 +4,6 @@
     "@primeng/mcp": "21.1.8"
   },
   "overrides": {
-    "@modelcontextprotocol/sdk": "1.29.0"
+    "@modelcontextprotocol/sdk": "1.24.3"
   }
 }
