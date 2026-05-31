@@ -18,7 +18,13 @@ Approved Define artifacts:
 - `project-context/1.define/prd.md`
 - `project-context/1.define/sad.md`
 
-The next valid stage is Build preparation under AAMAD Flow. Before coding starts, the project should proceed through the approved Build entry step, including tool availability validation, implementation sequencing, and any required role refinement.
+The current stage is Build preparation under AAMAD Flow.
+
+Approved Build preparation artifacts:
+
+- `project-context/2.build/frontend-functional-spec.md`
+
+Before coding starts, the project should complete the approved Build entry step, including tool availability validation, implementation sequencing, and any required role refinement.
 
 ## Review Gate
 
@@ -27,3 +33,5 @@ No AAMAD artifact may advance to the next stage until the human Agentic Architec
 Current SAD Flow + Crew orchestration review gate was approved as recorded in `.codex/aamad/review-log.md`.
 
 Current SAD Lesson 3 agent/task design and Lesson 4 LLM selection revision gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current frontend functional specification review gate is approved as recorded in `.codex/aamad/review-log.md`.
