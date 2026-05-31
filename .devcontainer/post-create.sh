@@ -17,6 +17,9 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
+git config --global user.email "rodriguesvali@gmail.com"
+git config --global user.name "Marco Antonio Rodrigues"
+
 ${SUDO} python -m pip install --upgrade pip
 ${SUDO} python -m pip install -r .devcontainer/requirements-bootstrap.txt
 ${SUDO} npm install -g @angular/cli
