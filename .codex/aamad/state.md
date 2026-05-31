@@ -24,6 +24,12 @@ Approved Build preparation artifacts:
 
 - `project-context/2.build/frontend-functional-spec.md`
 
+Approved role refinements:
+
+- `.codex/aamad/agents/frontend-eng.md`
+- `.codex/aamad/agents/backend-eng.md`
+- `.codex/aamad/agents/integration-eng.md`
+
 Before coding starts, the project should complete the approved Build entry step, including tool availability validation, implementation sequencing, and any required role refinement.
 
 ## Review Gate
@@ -35,3 +41,5 @@ Current SAD Flow + Crew orchestration review gate was approved as recorded in `.
 Current SAD Lesson 3 agent/task design and Lesson 4 LLM selection revision gate is approved as recorded in `.codex/aamad/review-log.md`.
 
 Current frontend functional specification review gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current frontend, backend, and integration persona technology-alignment review gates are approved as recorded in `.codex/aamad/review-log.md`.
