@@ -19,6 +19,7 @@ Included:
 - Mocked `OnboardingRunService` with `startRun` and `getRunStatus`.
 - Structured results view covering employee profile, executive summary, required documents, IT list, training path, initial agenda, communications in draft state, pending actions, risk flags, and next recommended actions.
 - Reset behavior for form/result cleanup.
+- Light/dark theme choice with `Claro` and `Escuro` controls.
 - Mock error path through `specialAccessNotes` containing `mock-error`.
 - Unit/component tests for app shell, FSM, mocked service, validation behavior, and successful result rendering.
 
@@ -37,6 +38,7 @@ Mandatory frontend documentation/tooling was checked before implementation:
 
 - PrimeNG MCP Server: available.
 - PrimeNG component docs retrieved for Button, InputText, DatePicker, Select, Message, ProgressBar, and Textarea.
+- PrimeNG styled theming guide retrieved for `darkModeSelector` guidance.
 - PrimeNG guide list retrieved, including installation, configuration, styled mode, accessibility, MCP, and v21 migration entries.
 - Context7 MCP Server: available.
 - Context7 Angular docs retrieved for current standalone components, route configuration, reactive forms, and testing guidance.
@@ -62,6 +64,9 @@ Build-preparation dependency:
 - Kept provider secrets, Gemini, CrewAI, and LLM concerns out of the browser.
 - Used PrimeNG components for primary form/status controls and restrained custom SCSS for layout.
 - Used pt-BR visible frontend copy for status banners, actions, select labels, result metadata, draft labels, and generated mock content.
+- Configured PrimeNG `darkModeSelector` as `.app-dark`.
+- Theme selection toggles `.app-dark` on the document root and persists `onboardflow-theme` in `localStorage`.
+- Form grid fields align to the top and no longer stretch neighboring inputs when validation messages increase row height.
 
 ## 4. Validation Evidence
 
@@ -76,7 +81,7 @@ npx prettier --check .
 Results:
 
 - Build passed.
-- Tests passed: 4 files, 10 tests.
+- Tests passed: 4 files, 11 tests.
 - Prettier check passed.
 - Screenshot capture passed with Playwright Chromium after installing browser runtime dependencies in the container.
 
@@ -87,6 +92,8 @@ Screenshots saved:
 - `project-context/2.build/screenshots/generate-desktop-filled.png`
 - `project-context/2.build/screenshots/generate-desktop-result.png`
 - `project-context/2.build/screenshots/generate-mobile-result.png`
+- `project-context/2.build/screenshots/generate-desktop-light-theme.png`
+- `project-context/2.build/screenshots/generate-desktop-dark-theme.png`
 
 ## 5. Files Added Or Changed
 

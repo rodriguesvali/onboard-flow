@@ -1,5 +1,5 @@
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -19,6 +19,8 @@ interface SelectOption {
   label: string;
   value: string;
 }
+
+type ThemeMode = 'light' | 'dark';
 
 type GeneratePlanForm = FormGroup<{
   fullName: FormControl<string>;
@@ -56,10 +58,13 @@ type GeneratePlanForm = FormGroup<{
   styleUrl: './generate-plan.page.scss',
 })
 export class GeneratePlanPage {
+  private readonly document = inject(DOCUMENT);
   private readonly onboardingRunService = inject(OnboardingRunService);
 
   protected readonly viewModel = signal(initialGeneratePlanViewModel);
   protected readonly submitted = signal(false);
+  protected readonly themeMode = signal<ThemeMode>(this.readInitialThemeMode());
+  protected readonly isDarkTheme = computed(() => this.themeMode() === 'dark');
 
   protected readonly employmentTypes: SelectOption[] = [
     { label: 'Tempo integral', value: 'Tempo integral' },
@@ -129,6 +134,15 @@ export class GeneratePlanPage {
         return 'Pronto para gerar um plano de onboarding.';
     }
   });
+
+  constructor() {
+    this.applyThemeMode(this.themeMode());
+  }
+
+  protected setThemeMode(mode: ThemeMode): void {
+    this.themeMode.set(mode);
+    this.applyThemeMode(mode);
+  }
 
   protected run(): void {
     this.submitted.set(true);
@@ -282,6 +296,17 @@ export class GeneratePlanPage {
       equipmentNeeds: optional(value.equipmentNeeds),
       specialAccessNotes: optional(value.specialAccessNotes),
     };
+  }
+
+  private readInitialThemeMode(): ThemeMode {
+    return localStorage.getItem('onboardflow-theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  private applyThemeMode(mode: ThemeMode): void {
+    const root = this.document.documentElement;
+    root.classList.toggle('app-dark', mode === 'dark');
+    root.dataset['theme'] = mode;
+    localStorage.setItem('onboardflow-theme', mode);
   }
 }
 

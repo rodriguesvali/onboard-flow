@@ -27,6 +27,7 @@ Included:
 - `Gerar plano` button.
 - `Limpar` button.
 - Status banner.
+- Light/dark theme choice.
 - Results view after mocked run completion.
 - Lightweight finite-state machine: `idle -> running -> done`, plus `error`.
 - Stub frontend service methods: `startRun` and `getRunStatus`.
@@ -62,14 +63,15 @@ The results view is a page-level view inside the same route, not a second route.
 
 1. HR user opens `/onboarding/generate`.
 2. UI shows the employee onboarding form and an idle status banner.
-3. HR user fills required fields.
-4. HR user selects `Gerar plano`.
-5. UI enters `running`, disables form actions that could corrupt the run, and shows progress status.
-6. `OnboardingRunService.startRun` returns a mocked `runId`.
-7. UI calls `OnboardingRunService.getRunStatus` for mocked status.
-8. If status returns `done`, UI shows the results view.
-9. If status returns `error`, UI shows an error banner and keeps form data for correction/retry.
-10. HR user can select `Limpar` to return to `idle` with a clean form.
+3. HR user may choose `Claro` or `Escuro` for the visual theme.
+4. HR user fills required fields.
+5. HR user selects `Gerar plano`.
+6. UI enters `running`, disables form actions that could corrupt the run, and shows progress status.
+7. `OnboardingRunService.startRun` returns a mocked `runId`.
+8. UI calls `OnboardingRunService.getRunStatus` for mocked status.
+9. If status returns `done`, UI shows the results view.
+10. If status returns `error`, UI shows an error banner and keeps form data for correction/retry.
+11. HR user can select `Limpar` to return to `idle` with a clean form.
 
 ## 6. Form Requirements
 
@@ -309,6 +311,8 @@ The results page must keep `Limpar` visible so the user can start over.
 ## 13. Accessibility and UX Rules
 
 - The first route screen must be the usable workbench, not a landing page.
+- Theme controls must be keyboard accessible and visibly indicate the selected mode.
+- Theme selection must not alter generated plan data or run state.
 - Required form fields must expose visible labels and validation messages.
 - Validation messages must be programmatically associated with fields where practical.
 - `Gerar plano` and `Limpar` must be keyboard accessible.
@@ -351,6 +355,8 @@ Unexpected missing result:
 - Error state can be reached through mocked failure handling.
 - Status banner reflects `idle`, `running`, `done`, and `error`.
 - No UI claims that messages were sent, approvals happened, or systems were provisioned.
+- User can switch between `Claro` and `Escuro`.
+- Theme selection is persisted locally for later visits.
 
 ## 16. Test Plan
 
@@ -369,6 +375,7 @@ Component tests:
 - Results view appears after mocked done response.
 - Error banner appears after mocked error response.
 - `Limpar` returns UI to `idle`.
+- Theme toggle applies and persists light/dark mode.
 
 Manual smoke test:
 
@@ -388,6 +395,7 @@ Update this checklist after each commit that changes the frontend workflow:
 - [x] Status banner text still avoids unsafe autonomy claims.
 - [x] Results view still labels communications as `Rascunho`.
 - [x] Visible frontend copy is consistently pt-BR.
+- [x] Theme controls still expose `Claro` and `Escuro` choices.
 - [x] PrimeNG usage was checked against the mandatory PrimeNG MCP Server before coding changes.
 - [x] Tests or manual smoke notes were updated for changed behavior.
 - [x] Any spec drift was either corrected in code or recorded for Agentic Architect review.

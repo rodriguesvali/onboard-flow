@@ -49,6 +49,9 @@ describe('GeneratePlanPage', () => {
   afterEach(() => {
     onboardingRunService.startRun.mockClear();
     onboardingRunService.getRunStatus.mockClear();
+    localStorage.removeItem('onboardflow-theme');
+    document.documentElement.classList.remove('app-dark');
+    delete document.documentElement.dataset['theme'];
   });
 
   it('renders the idle status banner', () => {
@@ -57,6 +60,30 @@ describe('GeneratePlanPage', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Pronto para gerar um plano de onboarding.');
+  });
+
+  it('lets the user switch between light and dark themes', () => {
+    const fixture = TestBed.createComponent(GeneratePlanPage);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const darkButton = Array.from(compiled.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Escuro'),
+    ) as HTMLButtonElement;
+    darkButton.click();
+    fixture.detectChanges();
+
+    expect(document.documentElement.classList.contains('app-dark')).toBe(true);
+    expect(localStorage.getItem('onboardflow-theme')).toBe('dark');
+
+    const lightButton = Array.from(compiled.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Claro'),
+    ) as HTMLButtonElement;
+    lightButton.click();
+    fixture.detectChanges();
+
+    expect(document.documentElement.classList.contains('app-dark')).toBe(false);
+    expect(localStorage.getItem('onboardflow-theme')).toBe('light');
   });
 
   it('does not start a run when required fields are missing', () => {

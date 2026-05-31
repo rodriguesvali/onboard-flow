@@ -2,6 +2,16 @@
 
 :root {
   color-scheme: light;
+  --app-bg: #f6f7f9;
+  --app-bg-gradient: linear-gradient(180deg, rgba(246, 247, 249, 0.9), #f6f7f9 360px);
+  --app-text: #1f2933;
+  --app-muted: #64748b;
+  --app-subtle: #536171;
+  --app-panel: #ffffff;
+  --app-panel-border: #dfe4ea;
+  --app-divider: #eef2f6;
+  --app-shadow: 0 14px 36px rgba(31, 41, 51, 0.06);
+  --app-error: #b42318;
   font-family:
     Inter,
     ui-sans-serif,
@@ -10,8 +20,25 @@
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
-  background: #f6f7f9;
-  color: #1f2933;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+:root.app-dark {
+  color-scheme: dark;
+  --app-bg: #111827;
+  --app-bg-gradient: linear-gradient(180deg, rgba(17, 24, 39, 0.96), #111827 360px);
+  --app-text: #e5e7eb;
+  --app-muted: #a8b3c7;
+  --app-subtle: #93a4bc;
+  --app-panel: #182132;
+  --app-panel-border: #2f3a4d;
+  --app-divider: #2a3548;
+  --app-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+  --app-error: #fca5a5;
+  --app-field: #202a3a;
+  --app-field-border: #42506a;
+  --app-field-placeholder: #8b97aa;
 }
 
 * {
@@ -21,11 +48,33 @@
 body {
   margin: 0;
   min-width: 320px;
-  background: linear-gradient(180deg, rgba(246, 247, 249, 0.9), #f6f7f9 360px), #f6f7f9;
+  background: var(--app-bg-gradient), var(--app-bg);
+  color: var(--app-text);
 }
 
 button,
 input,
 textarea {
   font: inherit;
+}
+
+:root.app-dark .p-inputtext,
+:root.app-dark .p-textarea,
+:root.app-dark .p-select {
+  border-color: var(--app-field-border) !important;
+  background: var(--app-field) !important;
+  color: var(--app-text) !important;
+}
+
+:root.app-dark .p-inputtext::placeholder,
+:root.app-dark .p-textarea::placeholder,
+:root.app-dark .p-select-label.p-placeholder {
+  color: var(--app-field-placeholder);
+}
+
+:root.app-dark .p-select-dropdown,
+:root.app-dark .p-datepicker-dropdown {
+  border-color: var(--app-field-border) !important;
+  background: #182132 !important;
+  color: var(--app-muted) !important;
 }

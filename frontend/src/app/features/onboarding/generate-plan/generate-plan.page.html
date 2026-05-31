@@ -4,7 +4,33 @@
       <p class="eyebrow">OnboardFlow AI</p>
       <h1>Gerar plano de onboarding</h1>
     </div>
-    <p-tag severity="secondary" value="Fluxo de revisao de rascunho" />
+    <div class="header-actions">
+      <div class="theme-toggle" aria-label="Escolha do tema">
+        <button
+          type="button"
+          class="theme-option"
+          [class.theme-option-active]="!isDarkTheme()"
+          [attr.aria-pressed]="!isDarkTheme()"
+          aria-label="Usar tema claro"
+          (click)="setThemeMode('light')"
+        >
+          <i class="pi pi-sun" aria-hidden="true"></i>
+          <span>Claro</span>
+        </button>
+        <button
+          type="button"
+          class="theme-option"
+          [class.theme-option-active]="isDarkTheme()"
+          [attr.aria-pressed]="isDarkTheme()"
+          aria-label="Usar tema escuro"
+          (click)="setThemeMode('dark')"
+        >
+          <i class="pi pi-moon" aria-hidden="true"></i>
+          <span>Escuro</span>
+        </button>
+      </div>
+      <p-tag severity="secondary" value="Fluxo de revisao de rascunho" />
+    </div>
   </header>
 
   <p-message
