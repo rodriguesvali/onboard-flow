@@ -7,9 +7,9 @@ See the full agent definitions adapted for Codex under `.codex/aamad/agents/`.
 - **@product-mgr** — Product Manager: Orchestrates product vision and requirements
 - **@system.arch** — System Architect: Produces SAD and SFS documents
 - **@project.mgr** — Project Manager: Scaffolds project and environment
-- **@frontend.eng** — Frontend Developer: Builds MVP chat interface
-- **@backend.eng** — Backend Developer: Builds CrewAI backend
-- **@integration.eng** — Integration Engineer: Connects frontend and backend
+- **@frontend.eng** — Frontend Engineer: Builds the Angular + PrimeNG MVP workbench
+- **@backend.eng** — Backend Engineer: Builds the Python CrewAI backend service
+- **@integration.eng** — Integration Engineer: Connects the Angular workbench to the Python CrewAI API
 - **@qa.eng** — QA Engineer: Validates MVP functionality
 
 ## Workflow

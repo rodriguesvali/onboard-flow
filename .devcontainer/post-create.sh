@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export PATH="${HOME}/.local/bin:${PATH}"
+
 if [ "$(id -u)" -eq 0 ]; then
   SUDO=""
 elif command -v sudo >/dev/null 2>&1; then
@@ -61,4 +63,9 @@ fi
 
 if ! command -v codex >/dev/null 2>&1; then
   curl -fsSL https://chatgpt.com/codex/install.sh | sh
+fi
+
+if ! command -v codex >/dev/null 2>&1; then
+  echo "Codex CLI installation completed, but codex is not available on PATH." >&2
+  exit 1
 fi
