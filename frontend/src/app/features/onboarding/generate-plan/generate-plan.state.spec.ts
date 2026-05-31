@@ -5,11 +5,11 @@ describe('transitionGeneratePlan', () => {
   const result: OnboardingPlanResult = {
     employeeProfile: {
       fullName: 'Ana Silva',
-      role: 'Software Engineer',
-      department: 'Engineering',
+      role: 'Engenheira de Software',
+      department: 'Engenharia',
       directManager: 'Joaquim',
       startDate: '2026-06-15',
-      workMode: 'Remote',
+      workMode: 'Remoto',
     },
     executiveSummary: 'Resumo.',
     requiredDocuments: [],

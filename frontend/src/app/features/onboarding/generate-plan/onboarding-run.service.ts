@@ -29,7 +29,8 @@ export class OnboardingRunService {
       return of({
         runId,
         status: 'error' as const,
-        message: 'Could not generate onboarding plan. Review the form and try again.',
+        message:
+          'Nao foi possivel gerar o plano de onboarding. Revise o formulario e tente novamente.',
         errorMessage: 'Run mockado nao encontrado.',
       }).pipe(delay(300));
     }
@@ -38,7 +39,8 @@ export class OnboardingRunService {
       return of({
         runId,
         status: 'error' as const,
-        message: 'Could not generate onboarding plan. Review the form and try again.',
+        message:
+          'Nao foi possivel gerar o plano de onboarding. Revise o formulario e tente novamente.',
         errorMessage: 'Falha simulada do servico mockado.',
       }).pipe(delay(700));
     }
@@ -79,7 +81,7 @@ function buildMockResult(input: EmployeeOnboardingInput): OnboardingPlanResult {
     ],
     itChecklist: [
       {
-        title: 'Notebook, email corporativo e MFA',
+        title: 'Notebook, e-mail corporativo e MFA',
         ownerRole: 'TI',
         status: 'pending',
         rationale: input.equipmentNeeds || 'Necessario para acesso inicial seguro.',
@@ -138,7 +140,7 @@ function buildMockResult(input: EmployeeOnboardingInput): OnboardingPlanResult {
         status: 'pending',
       },
       {
-        title: 'Revisar mensagens draft antes de envio externo',
+        title: 'Revisar mensagens em rascunho antes de envio externo',
         ownerRole: 'RH',
         status: 'pending',
       },
@@ -156,7 +158,7 @@ function buildMockResult(input: EmployeeOnboardingInput): OnboardingPlanResult {
     nextRecommendedActions: [
       'Revisar dados do colaborador e gestor direto.',
       'Confirmar checklist de TI antes da data de inicio.',
-      'Aprovar ou ajustar comunicados draft antes de qualquer envio.',
+      'Aprovar ou ajustar comunicados em rascunho antes de qualquer envio.',
     ],
   };
 }

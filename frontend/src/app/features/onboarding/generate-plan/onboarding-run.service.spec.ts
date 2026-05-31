@@ -10,12 +10,12 @@ describe('OnboardingRunService', () => {
   const input: EmployeeOnboardingInput = {
     fullName: 'Ana Silva',
     email: 'ana.silva@example.com',
-    role: 'Software Engineer',
-    department: 'Engineering',
+    role: 'Engenheira de Software',
+    department: 'Engenharia',
     directManager: 'Joaquim',
     startDate: '2026-06-15',
-    employmentType: 'Full-time',
-    workMode: 'Remote',
+    employmentType: 'Tempo integral',
+    workMode: 'Remoto',
   };
 
   beforeEach(() => {

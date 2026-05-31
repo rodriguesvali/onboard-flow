@@ -20,11 +20,11 @@ describe('GeneratePlanPage', () => {
         result: {
           employeeProfile: {
             fullName: 'Ana Silva',
-            role: 'Software Engineer',
-            department: 'Engineering',
+            role: 'Engenheira de Software',
+            department: 'Engenharia',
             directManager: 'Joaquim',
             startDate: '2026-06-15',
-            workMode: 'Remote',
+            workMode: 'Remoto',
           },
           executiveSummary: 'Resumo.',
           requiredDocuments: [],
@@ -56,7 +56,7 @@ describe('GeneratePlanPage', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Ready to generate an onboarding plan.');
+    expect(compiled.textContent).toContain('Pronto para gerar um plano de onboarding.');
   });
 
   it('does not start a run when required fields are missing', () => {
@@ -85,12 +85,12 @@ describe('GeneratePlanPage', () => {
     component.form.setValue({
       fullName: 'Ana Silva',
       email: 'ana.silva@example.com',
-      role: 'Software Engineer',
-      department: 'Engineering',
+      role: 'Engenheira de Software',
+      department: 'Engenharia',
       directManager: 'Joaquim',
       startDate: new Date('2026-06-15T00:00:00'),
-      employmentType: 'Full-time',
-      workMode: 'Remote',
+      employmentType: 'Tempo integral',
+      workMode: 'Remoto',
       seniority: '',
       location: '',
       contractRegion: '',
@@ -106,7 +106,7 @@ describe('GeneratePlanPage', () => {
     expect(onboardingRunService.startRun).toHaveBeenCalledOnce();
     expect(onboardingRunService.getRunStatus).toHaveBeenCalledWith('mock-run-1');
     expect(fixture.nativeElement.textContent).toContain(
-      'Onboarding plan generated for human review.',
+      'Plano de onboarding gerado para revisao humana.',
     );
     expect(fixture.nativeElement.textContent).toContain('Ana Silva');
   });

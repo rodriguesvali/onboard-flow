@@ -4,7 +4,7 @@
       <p class="eyebrow">OnboardFlow AI</p>
       <h1>Gerar plano de onboarding</h1>
     </div>
-    <p-tag severity="secondary" value="Draft review workflow" />
+    <p-tag severity="secondary" value="Fluxo de revisao de rascunho" />
   </header>
 
   <p-message
@@ -15,7 +15,7 @@
   />
 
   @if (isRunning()) {
-    <p-progressbar mode="indeterminate" [showValue]="false" aria-label="Generating plan" />
+    <p-progressbar mode="indeterminate" [showValue]="false" aria-label="Gerando plano" />
   }
 
   @if (viewModel().state !== 'done') {
@@ -41,7 +41,7 @@
           </label>
 
           <label>
-            <span>Email</span>
+            <span>E-mail</span>
             <input
               pInputText
               inputId="email"
@@ -50,9 +50,9 @@
               [invalid]="showRequiredError('email') || showEmailError()"
             />
             @if (showRequiredError('email')) {
-              <small>Informe o email.</small>
+              <small>Informe o e-mail.</small>
             } @else if (showEmailError()) {
-              <small>Informe um email valido.</small>
+              <small>Informe um e-mail valido.</small>
             }
           </label>
 
@@ -209,7 +209,7 @@
       <footer class="action-bar">
         <p-button
           type="button"
-          label="Reset"
+          label="Limpar"
           icon="pi pi-refresh"
           severity="secondary"
           variant="outlined"
@@ -218,7 +218,7 @@
         />
         <p-button
           type="submit"
-          label="Run"
+          label="Gerar plano"
           icon="pi pi-play"
           [loading]="isRunning()"
           [disabled]="isRunning()"
@@ -237,10 +237,10 @@
           </p>
         </div>
         <div class="results-actions">
-          <p-tag severity="success" [value]="plan.status" />
+          <p-tag severity="success" [value]="planStatusLabel(plan.status)" />
           <p-button
             type="button"
-            label="Reset"
+            label="Limpar"
             icon="pi pi-refresh"
             severity="secondary"
             variant="outlined"
@@ -293,7 +293,7 @@
         />
         <ng-container
           [ngTemplateOutlet]="itemList"
-          [ngTemplateOutletContext]="{ title: 'Checklist de TI', items: plan.itChecklist }"
+          [ngTemplateOutletContext]="{ title: 'Lista de TI', items: plan.itChecklist }"
         />
         <ng-container
           [ngTemplateOutlet]="itemList"
@@ -314,15 +314,15 @@
       </div>
 
       <section class="communications" aria-labelledby="communications-heading">
-        <h3 id="communications-heading">Comunicados draft</h3>
+        <h3 id="communications-heading">Comunicados em rascunho</h3>
         <div class="communication-grid">
           @for (communication of plan.communications; track communication.subject) {
             <p-card>
               <div class="card-heading-row">
                 <h4>{{ communication.subject }}</h4>
-                <p-tag severity="warn" value="Draft" />
+                <p-tag severity="warn" value="Rascunho" />
               </div>
-              <p class="audience">Audience: {{ communication.audience }}</p>
+              <p class="audience">Publico: {{ audienceLabel(communication.audience) }}</p>
               <p>{{ communication.body }}</p>
               <p class="review-note">Requer revisao humana antes de qualquer envio.</p>
             </p-card>
@@ -343,7 +343,7 @@
             <strong>{{ item.title }}</strong>
             <p-tag [severity]="statusSeverityFor(item)" [value]="statusLabel(item)" />
           </div>
-          <span class="owner">Owner: {{ item.ownerRole }}</span>
+          <span class="owner">Responsavel: {{ item.ownerRole }}</span>
           @if (item.rationale) {
             <p>{{ item.rationale }}</p>
           }

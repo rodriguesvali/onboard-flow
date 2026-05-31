@@ -62,23 +62,23 @@ export class GeneratePlanPage {
   protected readonly submitted = signal(false);
 
   protected readonly employmentTypes: SelectOption[] = [
-    { label: 'Full-time', value: 'Full-time' },
-    { label: 'Part-time', value: 'Part-time' },
-    { label: 'Contractor', value: 'Contractor' },
-    { label: 'Internship', value: 'Internship' },
+    { label: 'Tempo integral', value: 'Tempo integral' },
+    { label: 'Meio periodo', value: 'Meio periodo' },
+    { label: 'Prestador de servico', value: 'Prestador de servico' },
+    { label: 'Estagio', value: 'Estagio' },
   ];
 
   protected readonly workModes: SelectOption[] = [
-    { label: 'Remote', value: 'Remote' },
-    { label: 'Hybrid', value: 'Hybrid' },
-    { label: 'On-site', value: 'On-site' },
+    { label: 'Remoto', value: 'Remoto' },
+    { label: 'Hibrido', value: 'Hibrido' },
+    { label: 'Presencial', value: 'Presencial' },
   ];
 
   protected readonly seniorityLevels: SelectOption[] = [
     { label: 'Junior', value: 'Junior' },
-    { label: 'Mid-level', value: 'Mid-level' },
+    { label: 'Pleno', value: 'Pleno' },
     { label: 'Senior', value: 'Senior' },
-    { label: 'Lead', value: 'Lead' },
+    { label: 'Lider', value: 'Lider' },
   ];
 
   protected readonly form: GeneratePlanForm = new FormGroup({
@@ -119,14 +119,14 @@ export class GeneratePlanPage {
   protected readonly statusText = computed(() => {
     switch (this.viewModel().state) {
       case 'running':
-        return 'Generating onboarding plan...';
+        return 'Gerando plano de onboarding...';
       case 'done':
-        return 'Onboarding plan generated for human review.';
+        return 'Plano de onboarding gerado para revisao humana.';
       case 'error':
-        return 'Could not generate onboarding plan. Review the form and try again.';
+        return 'Nao foi possivel gerar o plano de onboarding. Revise o formulario e tente novamente.';
       case 'idle':
       default:
-        return 'Ready to generate an onboarding plan.';
+        return 'Pronto para gerar um plano de onboarding.';
     }
   });
 
@@ -226,6 +226,27 @@ export class GeneratePlanPage {
     };
 
     return labels[item.status];
+  }
+
+  protected planStatusLabel(status: 'draft' | 'ready_for_review' | 'incomplete'): string {
+    const labels: Record<'draft' | 'ready_for_review' | 'incomplete', string> = {
+      draft: 'Rascunho',
+      ready_for_review: 'Pronto para revisao',
+      incomplete: 'Incompleto',
+    };
+
+    return labels[status];
+  }
+
+  protected audienceLabel(audience: 'collaborator' | 'manager' | 'it' | 'hr'): string {
+    const labels: Record<'collaborator' | 'manager' | 'it' | 'hr', string> = {
+      collaborator: 'Colaborador',
+      manager: 'Gestor',
+      it: 'TI',
+      hr: 'RH',
+    };
+
+    return labels[audience];
   }
 
   protected statusSeverityFor(item: ResultItem): 'info' | 'success' | 'warn' | 'danger' {

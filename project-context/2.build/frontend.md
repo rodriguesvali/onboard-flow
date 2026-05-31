@@ -17,7 +17,7 @@ Included:
 - Reactive employee onboarding form with required and optional fields from the approved frontend functional specification.
 - Lightweight finite-state machine with `idle`, `running`, `done`, and `error`.
 - Mocked `OnboardingRunService` with `startRun` and `getRunStatus`.
-- Structured results view covering employee profile, executive summary, required documents, IT checklist, training path, initial agenda, draft communications, pending actions, risk flags, and next recommended actions.
+- Structured results view covering employee profile, executive summary, required documents, IT list, training path, initial agenda, communications in draft state, pending actions, risk flags, and next recommended actions.
 - Reset behavior for form/result cleanup.
 - Mock error path through `specialAccessNotes` containing `mock-error`.
 - Unit/component tests for app shell, FSM, mocked service, validation behavior, and successful result rendering.
@@ -61,7 +61,7 @@ Build-preparation dependency:
 - Kept all backend/API behavior mocked in the frontend service, preserving the integration boundary for `@integration.eng`.
 - Kept provider secrets, Gemini, CrewAI, and LLM concerns out of the browser.
 - Used PrimeNG components for primary form/status controls and restrained custom SCSS for layout.
-- Used English status banner text exactly as specified, while mock generated plan content is pt-BR aligned with the SAD default.
+- Used pt-BR visible frontend copy for status banners, actions, select labels, result metadata, draft labels, and generated mock content.
 
 ## 4. Validation Evidence
 

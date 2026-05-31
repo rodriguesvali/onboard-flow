@@ -24,8 +24,8 @@ Included:
 
 - One Angular route for the critical workflow.
 - Basic employee onboarding form.
-- Run button.
-- Reset button.
+- `Gerar plano` button.
+- `Limpar` button.
 - Status banner.
 - Results view after mocked run completion.
 - Lightweight finite-state machine: `idle -> running -> done`, plus `error`.
@@ -63,30 +63,30 @@ The results view is a page-level view inside the same route, not a second route.
 1. HR user opens `/onboarding/generate`.
 2. UI shows the employee onboarding form and an idle status banner.
 3. HR user fills required fields.
-4. HR user selects Run.
+4. HR user selects `Gerar plano`.
 5. UI enters `running`, disables form actions that could corrupt the run, and shows progress status.
 6. `OnboardingRunService.startRun` returns a mocked `runId`.
 7. UI calls `OnboardingRunService.getRunStatus` for mocked status.
 8. If status returns `done`, UI shows the results view.
 9. If status returns `error`, UI shows an error banner and keeps form data for correction/retry.
-10. HR user can select Reset to return to `idle` with a clean form.
+10. HR user can select `Limpar` to return to `idle` with a clean form.
 
 ## 6. Form Requirements
 
 Required fields:
 
 - Full name.
-- Email.
+- E-mail.
 - Role.
 - Department.
 - Direct manager.
-- Start date.
+- Start date / data de inicio.
 - Employment type.
 - Work mode.
 
 Optional fields:
 
-- Seniority.
+- Seniority / senioridade.
 - Location.
 - Contract region.
 - Preferred language.
@@ -99,7 +99,7 @@ PrimeNG component guidance:
 - Use `p-calendar` or current PrimeNG date picker equivalent for start date.
 - Use `p-dropdown` or current PrimeNG select equivalent for constrained values.
 - Use `p-textarea` or current PrimeNG textarea equivalent for notes.
-- Use `p-button` for Run and Reset.
+- Use `p-button` for `Gerar plano` and `Limpar`.
 - Use `p-message` or `p-messages` for validation and status feedback.
 - Use `p-progressSpinner` or `p-progressBar` during `running`.
 - Use `p-panel`, `p-card`, or simple semantic sections for result groups; avoid decorative nesting.
@@ -280,10 +280,10 @@ Banner text:
 
 | State | Severity | Text |
 | --- | --- | --- |
-| `idle` | Info | Ready to generate an onboarding plan. |
-| `running` | Info | Generating onboarding plan... |
-| `done` | Success | Onboarding plan generated for human review. |
-| `error` | Error | Could not generate onboarding plan. Review the form and try again. |
+| `idle` | Info | Pronto para gerar um plano de onboarding. |
+| `running` | Info | Gerando plano de onboarding... |
+| `done` | Success | Plano de onboarding gerado para revisao humana. |
+| `error` | Error | Nao foi possivel gerar o plano de onboarding. Revise o formulario e tente novamente. |
 
 The banner must not imply that communications were sent, access was provisioned, or the plan was approved.
 
@@ -297,21 +297,21 @@ Show these sections:
 - IT checklist.
 - Training path.
 - Initial agenda.
-- Draft communications.
+- Communications labeled as `Rascunho`.
 - Pending actions.
 - Risk flags.
 - Next recommended actions.
 
-Each communication must be labeled as draft and requiring human review.
+Each communication must be labeled as `Rascunho` and requiring human review.
 
-The results page must keep Reset visible so the user can start over.
+The results page must keep `Limpar` visible so the user can start over.
 
 ## 13. Accessibility and UX Rules
 
 - The first route screen must be the usable workbench, not a landing page.
 - Required form fields must expose visible labels and validation messages.
 - Validation messages must be programmatically associated with fields where practical.
-- Run and Reset must be keyboard accessible.
+- `Gerar plano` and `Limpar` must be keyboard accessible.
 - Running state must be announced visually and through semantic status text.
 - Color must not be the only signal for status or risk.
 - Results must use semantic headings in a scan-friendly order.
@@ -329,8 +329,8 @@ Mock service error:
 - Transition to `error`.
 - Preserve form values.
 - Show a banner-level error message.
-- Allow retry by selecting Run again.
-- Allow clearing with Reset.
+- Allow retry by selecting `Gerar plano` again.
+- Allow clearing with `Limpar`.
 
 Unexpected missing result:
 
@@ -342,12 +342,12 @@ Unexpected missing result:
 
 - A user can access the workflow at one route.
 - A user can fill the basic employee onboarding form.
-- Run is disabled or prevented when required fields are invalid.
-- Run transitions the finite-state machine from `idle` to `running`.
+- `Gerar plano` is disabled or prevented when required fields are invalid.
+- `Gerar plano` transitions the finite-state machine from `idle` to `running`.
 - Mock service returns a run id and mocked plan result.
 - Successful mocked status transitions the UI to `done`.
 - Done state shows all required result sections.
-- Reset clears form, result, and error state.
+- `Limpar` clears form, result, and error state.
 - Error state can be reached through mocked failure handling.
 - Status banner reflects `idle`, `running`, `done`, and `error`.
 - No UI claims that messages were sent, approvals happened, or systems were provisioned.
@@ -364,11 +364,11 @@ Unit tests:
 
 Component tests:
 
-- Run button behavior for valid and invalid form states.
+- `Gerar plano` button behavior for valid and invalid form states.
 - Running banner appears during mocked execution.
 - Results view appears after mocked done response.
 - Error banner appears after mocked error response.
-- Reset returns UI to `idle`.
+- `Limpar` returns UI to `idle`.
 
 Manual smoke test:
 
@@ -386,7 +386,8 @@ Update this checklist after each commit that changes the frontend workflow:
 - [x] Service stubs still expose `startRun` and `getRunStatus`.
 - [x] Mock result still maps to SAD final-plan sections.
 - [x] Status banner text still avoids unsafe autonomy claims.
-- [x] Results view still labels communications as drafts.
+- [x] Results view still labels communications as `Rascunho`.
+- [x] Visible frontend copy is consistently pt-BR.
 - [x] PrimeNG usage was checked against the mandatory PrimeNG MCP Server before coding changes.
 - [x] Tests or manual smoke notes were updated for changed behavior.
 - [x] Any spec drift was either corrected in code or recorded for Agentic Architect review.
