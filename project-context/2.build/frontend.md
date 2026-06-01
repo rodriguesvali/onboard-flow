@@ -156,3 +156,47 @@ Results:
 - Angular production build passed.
 - Prettier check passed.
 - Agentic Architect manually tested and approved that the field is clearing after registering the adjustment request.
+
+## 8. Post-QA Executive Summary Markdown Accordion
+
+Date: 2026-06-01
+Status: Approved by Agentic Architect
+
+Implemented after Agentic Architect observed that the executive summary appeared as an unformatted long paragraph in the generated-plan result view.
+
+Documentation/tooling checked before implementation:
+
+- Context7 `ngx-markdown` documentation for standalone Angular usage and sanitization.
+- Context7 Angular security documentation for sanitized dynamic HTML rendering.
+- PrimeNG MCP documentation for Accordion v21 usage.
+
+Changed behavior:
+
+- Backend now emits a controlled Markdown-formatted `executiveSummary` with a short lead sentence and bullet points instead of a single long concatenated paragraph.
+- CrewAI summary normalization deduplicates specialist summaries before adding up to three agent summary bullets.
+- Backend no longer copies raw CrewAI `output.summary` text into the executive summary, so model outputs in another language cannot leak into that field.
+- CrewAI task descriptions and expected-output instructions now require human-readable JSON text values in pt-BR.
+- CrewAI refinement normalization preserves the current pt-BR executive summary and appends a controlled pt-BR refinement bullet instead of accepting a model-rewritten summary in another language.
+- Frontend renders only the `executiveSummary` field through `ngx-markdown` with sanitization enabled.
+- The executive summary is now displayed inside a PrimeNG Accordion, opened by default and collapsible by the user.
+- Markdown provider is scoped to the lazy generate-plan component to avoid increasing the initial application bundle.
+
+Validation evidence:
+
+```text
+npm test -- --watch=false
+npm run build
+npx prettier --check .
+uv run pytest
+uv run python -m compileall src tests
+```
+
+Results:
+
+- Frontend tests passed: 4 files, 15 tests.
+- Angular production build passed without budget warnings.
+- Prettier check passed.
+- Backend tests passed: 3 files, 12 tests.
+- Backend compileall passed for `src` and `tests`.
+- Backend tests now cover that English fake CrewAI summaries are not included in the normalized executive summary.
+- Agentic Architect approved the executive summary Markdown Accordion refinement.

@@ -38,6 +38,35 @@ def _item(row: dict, status: ItemStatus = ItemStatus.PENDING) -> ResultItem:
     )
 
 
+def _executive_summary_markdown(
+    employee: EmployeeOnboardingInput,
+    mode_note: str,
+    extra_points: list[str] | None = None,
+) -> str:
+    points = [
+        mode_note,
+        "Nenhum envio, acesso, provisionamento ou aprovacao externa foi executado.",
+        "Dados obrigatorios validados com sucesso.",
+        "Catalogos locais usados para documentos, TI, treinamento e comunicados.",
+    ]
+    if extra_points:
+        points.extend(extra_points)
+    bullet_lines = "\n".join(f"- {point}" for point in points)
+    return (
+        f"Plano inicial para **{employee.full_name}**, {employee.role} em "
+        f"**{employee.department}**.\n\n"
+        f"{bullet_lines}"
+    )
+
+
+def _append_refinement_summary(summary: str) -> str:
+    return (
+        f"{summary}\n\n"
+        "- Ajustes solicitados pelo RH foram incorporados como nova versao de rascunho "
+        "para revisao humana."
+    )
+
+
 def _log_agent_started(flow_mode: str, run_id: str, task_id: str, agent_name: str) -> None:
     logger.info(
         "agent_operation_started flow_mode=%s run_id=%s task_id=%s agent=%s",
@@ -399,10 +428,9 @@ class DeterministicOnboardingFlow:
         )
         plan = OnboardingPlanResult(
             employeeProfile=profile,
-            executiveSummary=(
-                f"Plano inicial para {employee.full_name}, {employee.role} em "
-                f"{employee.department}. O conteudo esta pronto para revisao humana e nao "
-                "executa envios, acessos ou provisionamentos automaticamente."
+            executiveSummary=_executive_summary_markdown(
+                employee,
+                "Conteudo pronto para revisao humana.",
             ),
             requiredDocuments=required_documents,
             itChecklist=it_items,
@@ -672,12 +700,14 @@ class LiveCrewAIOnboardingFlow:
             + "Return a complete OnboardingPlanResult JSON object. Preserve the employee profile "
             + "and do not claim that messages were sent, access was provisioned, systems were "
             + "changed, or a plan was approved. Set status to draft unless the instruction only "
-            + "clarifies copy without changing review state."
+            + "clarifies copy without changing review state. All human-readable text fields must "
+            + "be written in pt-BR."
         )
         config["expected_output"] = (
             "A complete JSON object matching OnboardingPlanResult: employeeProfile, "
             "executiveSummary, requiredDocuments, itChecklist, trainingPath, initialAgenda, "
-            "communications, pendingActions, riskFlags, status, and nextRecommendedActions."
+            "communications, pendingActions, riskFlags, status, and nextRecommendedActions. "
+            "All human-readable text values must be written in pt-BR."
         )
         return crewai["Task"](
             config=config,
@@ -691,6 +721,7 @@ class LiveCrewAIOnboardingFlow:
             f"Task id: {task_id}. Return only validated structured JSON. "
             "Do not claim that emails were sent, access was provisioned, systems were changed, "
             "or a plan was approved. All output is advisory and pending human review.\n"
+            "All human-readable text values inside the JSON must be written in pt-BR.\n"
             "Employee input JSON: {employee_json}\n"
             "Validation JSON: {validation_json}\n"
             "Local catalog JSON: {catalog_json}\n"
@@ -709,7 +740,8 @@ class LiveCrewAIOnboardingFlow:
         return (
             "A JSON object matching SpecialistOutput: taskId, agentName, status, summary, "
             "items, pendingActions, risks, communications, assumptions, inputSources, "
-            "and qualityChecks. status must be done or incomplete."
+            "and qualityChecks. status must be done or incomplete. All human-readable text "
+            "values must be written in pt-BR."
             f"{communication_note}"
         )
 
@@ -858,14 +890,14 @@ class LiveCrewAIOnboardingFlow:
                 ],
             )
         status = baseline.status if not incomplete_outputs else PlanStatus.DRAFT
-        summaries = [output.summary for output in outputs if output.summary]
-        executive_summary = (
-            f"Plano inicial para {employee.full_name}, {employee.role} em {employee.department}. "
-            "Especialistas CrewAI executaram analise consultiva com normalizacao pelo Flow. "
-            "Nenhum envio, acesso, provisionamento ou aprovacao externa foi executado."
+        executive_summary = _executive_summary_markdown(
+            employee,
+            "Especialistas CrewAI executaram analise consultiva com normalizacao pelo Flow.",
+            [
+                "Saidas dos agentes foram validadas contra o contrato estruturado do plano.",
+                "Resumo executivo mantido em pt-BR pelo Flow para consistencia da experiencia.",
+            ],
         )
-        if summaries:
-            executive_summary += " Resumos: " + " | ".join(summaries[:3])
         return OnboardingPlanResult(
             employeeProfile=baseline.employee_profile,
             executiveSummary=executive_summary,
@@ -890,6 +922,7 @@ class LiveCrewAIOnboardingFlow:
         data["employeeProfile"] = current_plan.employee_profile.model_dump(
             mode="json", by_alias=True
         )
+        data["executiveSummary"] = _append_refinement_summary(current_plan.executive_summary)
         data["status"] = PlanStatus.DRAFT
         data["pendingActions"] = self._merge_items(
             [
@@ -949,10 +982,7 @@ def _apply_refinement(
         status=ItemStatus.PENDING,
         rationale=instruction,
     )
-    data["executiveSummary"] = (
-        f"{data['executiveSummary']} Ajustes solicitados pelo RH foram incorporados "
-        "como nova versao de rascunho para revisao humana."
-    )
+    data["executiveSummary"] = _append_refinement_summary(data["executiveSummary"])
     data["pendingActions"].append(adjustment.model_dump(mode="json", by_alias=True))
     for section_name, item in _section_adjustments(instruction).items():
         data[section_name].append(item.model_dump(mode="json", by_alias=True))

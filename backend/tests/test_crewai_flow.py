@@ -44,7 +44,7 @@ class FakeCrew:
         if "current_plan_json" in inputs:
             current_plan = OnboardingPlanResult.model_validate_json(inputs["current_plan_json"])
             data = current_plan.model_dump(mode="json", by_alias=True)
-            data["executiveSummary"] = "Resumo refinado pelo fake CrewAI."
+            data["executiveSummary"] = "Refined summary from fake CrewAI."
             data["status"] = "draft"
             task = self.tasks[0]
             task.output = SimpleNamespace(
@@ -130,6 +130,8 @@ def test_live_crewai_flow_executes_crew_and_normalizes_plan(monkeypatch, employe
     assert len(outputs) == 5
     assert outputs[0].input_sources == ["employee_input", "local_catalogs", "crewai"]
     assert plan.required_documents[0].title == "Documento de identificacao"
+    assert "generate_document_checklist completed" not in plan.executive_summary
+    assert "Resumo executivo mantido em pt-BR" in plan.executive_summary
     assert all(item.title != "Crew document" for item in plan.it_checklist)
     assert plan.communications[0].subject == "Crew subject"
     assert plan.status == "ready_for_review"
@@ -166,6 +168,7 @@ def test_live_crewai_flow_refines_plan_with_structured_output(monkeypatch, emplo
 
     assert output.status == "done"
     assert output.task_id == "refine_plan_revision"
-    assert refined.executive_summary == "Resumo refinado pelo fake CrewAI."
+    assert "Refined summary from fake CrewAI" not in refined.executive_summary
+    assert "Ajustes solicitados pelo RH foram incorporados" in refined.executive_summary
     assert refined.status == "draft"
     assert any(item.title == "Ajuste solicitado pelo RH" for item in refined.pending_actions)

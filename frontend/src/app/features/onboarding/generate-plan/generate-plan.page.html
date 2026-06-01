@@ -342,10 +342,14 @@
         </section>
       }
 
-      <p-card>
-        <h3>Resumo executivo</h3>
-        <p>{{ plan.executiveSummary }}</p>
-      </p-card>
+      <p-accordion class="executive-summary-accordion" value="summary">
+        <p-accordion-panel value="summary">
+          <p-accordion-header>Resumo executivo</p-accordion-header>
+          <p-accordion-content>
+            <markdown class="summary-md" [data]="plan.executiveSummary" />
+          </p-accordion-content>
+        </p-accordion-panel>
+      </p-accordion>
 
       <div class="result-grid">
         <p-card>

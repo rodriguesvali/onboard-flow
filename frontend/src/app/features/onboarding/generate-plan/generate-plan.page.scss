@@ -223,6 +223,20 @@ small {
   margin-bottom: 0;
 }
 
+.summary-md {
+  line-height: 1.55;
+}
+
+:host ::ng-deep .summary-md p {
+  margin: 0 0 12px;
+}
+
+:host ::ng-deep .summary-md ul {
+  display: grid;
+  margin: 0;
+  padding-left: 18px;
+}
+
 .profile-list {
   display: grid;
   gap: 12px;

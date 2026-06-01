@@ -154,6 +154,14 @@ Post-QA frontend refinement approved by Agentic Architect:
 - Validation after refinement: `npm test -- --watch=false` passed with 4 files and 15 tests; `npm run build` passed; `npx prettier --check .` passed.
 - Agentic Architect manually tested and approved that the field is clearing after registering the adjustment request.
 
+Post-QA visual refinement approved by Agentic Architect:
+
+- Agentic Architect observed that the executive summary appeared as an unformatted long paragraph.
+- Backend now structures `executiveSummary` as controlled pt-BR Markdown, and the frontend renders that field with sanitized `ngx-markdown` inside a collapsible PrimeNG Accordion.
+- Backend normalization prevents raw CrewAI `output.summary` text in another language from being copied into `executiveSummary`; refinement also preserves/appends controlled pt-BR summary text.
+- Validation after refinement: `npm test -- --watch=false` passed with 4 files and 15 tests; `npm run build` passed without budget warnings; `npx prettier --check .` passed; `uv run pytest` passed with 3 files and 12 tests; `uv run python -m compileall src tests` passed.
+- Agentic Architect approved the executive summary Markdown Accordion refinement.
+
 ## 6. Limitations And Follow-up QA
 
 Recommended follow-up before broader demo or delivery:

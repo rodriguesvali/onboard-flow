@@ -1,6 +1,8 @@
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, SecurityContext, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MarkdownComponent, SANITIZE, provideMarkdown } from 'ngx-markdown';
+import { AccordionModule } from 'primeng/accordion';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -45,6 +47,8 @@ type GeneratePlanForm = FormGroup<{
   imports: [
     ReactiveFormsModule,
     NgTemplateOutlet,
+    MarkdownComponent,
+    AccordionModule,
     ButtonModule,
     CardModule,
     DatePickerModule,
@@ -54,6 +58,14 @@ type GeneratePlanForm = FormGroup<{
     SelectModule,
     TagModule,
     TextareaModule,
+  ],
+  providers: [
+    ...provideMarkdown({
+      sanitize: {
+        provide: SANITIZE,
+        useValue: SecurityContext.HTML,
+      },
+    }),
   ],
   templateUrl: './generate-plan.page.html',
   styleUrl: './generate-plan.page.scss',

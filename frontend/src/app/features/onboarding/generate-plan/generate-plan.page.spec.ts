@@ -27,7 +27,7 @@ describe('GeneratePlanPage', () => {
             startDate: '2026-06-15',
             workMode: 'Remoto',
           },
-          executiveSummary: 'Resumo.',
+          executiveSummary: 'Resumo.\n\n- Item validado.',
           requiredDocuments: [],
           itChecklist: [],
           trainingPath: [],
@@ -55,7 +55,7 @@ describe('GeneratePlanPage', () => {
             startDate: '2026-06-15',
             workMode: 'Remoto',
           },
-          executiveSummary: 'Resumo refinado.',
+          executiveSummary: 'Resumo refinado.\n\n- Ajuste incorporado.',
           requiredDocuments: [],
           itChecklist: [],
           trainingPath: [],
@@ -175,6 +175,7 @@ describe('GeneratePlanPage', () => {
       'Plano de onboarding gerado para revisao humana.',
     );
     expect(fixture.nativeElement.textContent).toContain('Ana Silva');
+    expect(fixture.nativeElement.textContent).toContain('Item validado.');
     expect(fixture.nativeElement.textContent).toContain('Aprovar plano');
     expect(fixture.nativeElement.textContent).toContain('Solicitar ajustes');
   });
@@ -285,6 +286,7 @@ describe('GeneratePlanPage', () => {
       'Ajustes aplicados ao plano. Revise a nova versao antes de aprovar.',
     );
     expect(fixture.nativeElement.textContent).toContain('Resumo refinado.');
+    expect(fixture.nativeElement.textContent).toContain('Ajuste incorporado.');
     expect(fixture.nativeElement.textContent).toContain('Ajuste solicitado pelo RH');
     expect(fixture.nativeElement.textContent).toContain('Revisar prazos da agenda inicial.');
   });
