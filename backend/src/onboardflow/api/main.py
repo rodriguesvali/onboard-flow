@@ -1,3 +1,6 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,10 +15,21 @@ from onboardflow.domain.models import (
     StartRunResponse,
 )
 
+logger = logging.getLogger("uvicorn.error")
+
 
 def create_app() -> FastAPI:
     settings = get_app_settings()
-    app = FastAPI(title="OnboardFlow AI Backend", version="0.1.0")
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        logger.info(
+            "onboardflow_backend_started flow_mode=%s",
+            settings.onboarding_flow_mode,
+        )
+        yield
+
+    app = FastAPI(title="OnboardFlow AI Backend", version="0.1.0", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -60,4 +74,3 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-

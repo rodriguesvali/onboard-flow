@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import logging
 
 from onboardflow.application.ports import (
     MarkdownRendererPort,
@@ -25,6 +26,8 @@ from onboardflow.domain.models import (
     new_id,
     utc_now,
 )
+
+logger = logging.getLogger("uvicorn.error")
 
 
 def validate_employee_input(employee: EmployeeOnboardingInput) -> ValidationResult:
@@ -74,10 +77,22 @@ class OnboardingApplicationService:
 
     def generate(self, employee: EmployeeOnboardingInput) -> StartRunResponse:
         run = OnboardingRun(inputData=employee.model_dump(mode="json", by_alias=True))
+        logger.info(
+            "onboarding_generation_started run_id=%s flow_mode=%s",
+            run.run_id,
+            self.settings.onboarding_flow_mode,
+        )
         run.action_history.append(self._action(run.run_id, "generation_requested", "Run recebido."))
         self.repository.save(run)
 
+        logger.info("onboarding_input_validation_started run_id=%s", run.run_id)
         validation = validate_employee_input(employee)
+        logger.info(
+            "onboarding_input_validation_completed run_id=%s status=%s issues=%s",
+            run.run_id,
+            validation.status,
+            len(validation.issues),
+        )
         run.validation_result = validation
         run.action_history.append(
             self._action(
@@ -89,6 +104,10 @@ class OnboardingApplicationService:
         )
 
         if validation.status == "unusable":
+            logger.warning(
+                "onboarding_generation_blocked run_id=%s reason=unusable_input",
+                run.run_id,
+            )
             run.status = RunStatus.ERROR
             run.message = "Nao foi possivel gerar o plano de onboarding."
             run.error_message = "Entrada invalida para execucao dos agentes."
@@ -97,8 +116,19 @@ class OnboardingApplicationService:
             return StartRunResponse(runId=run.run_id, status="running")
 
         try:
+            logger.info(
+                "onboarding_flow_execution_started run_id=%s flow_mode=%s",
+                run.run_id,
+                self.settings.onboarding_flow_mode,
+            )
             specialist_outputs, plan = self.flow.execute(run, employee, validation)
         except Exception as exc:
+            logger.exception(
+                "onboarding_flow_execution_failed run_id=%s flow_mode=%s error=%s",
+                run.run_id,
+                self.settings.onboarding_flow_mode,
+                exc,
+            )
             run.status = RunStatus.ERROR
             run.message = "Nao foi possivel gerar o plano de onboarding."
             run.error_message = "Falha na execucao dos agentes de onboarding."
@@ -113,6 +143,12 @@ class OnboardingApplicationService:
             )
             self.repository.save(run)
             return StartRunResponse(runId=run.run_id, status="running")
+        logger.info(
+            "onboarding_flow_execution_completed run_id=%s flow_mode=%s specialist_outputs=%s",
+            run.run_id,
+            self.settings.onboarding_flow_mode,
+            len(specialist_outputs),
+        )
 
         for output in specialist_outputs:
             run.action_history.append(
@@ -126,7 +162,15 @@ class OnboardingApplicationService:
                     validation_result=output.status,
                 )
             )
+            logger.info(
+                "onboarding_specialist_output_recorded run_id=%s task_id=%s agent=%s status=%s",
+                run.run_id,
+                output.task_id,
+                output.agent_name,
+                output.status,
+            )
 
+        logger.info("onboarding_plan_normalization_started run_id=%s", run.run_id)
         run.result = plan
         run.markdown = self.markdown_renderer.render(plan)
         run.status = RunStatus.DONE
@@ -136,6 +180,11 @@ class OnboardingApplicationService:
             self._action(run.run_id, "plan_normalized", "Plano JSON validado.")
         )
         self.repository.save(run)
+        logger.info(
+            "onboarding_generation_completed run_id=%s status=%s",
+            run.run_id,
+            run.status,
+        )
         return StartRunResponse(runId=run.run_id, status="running")
 
     def get_run(self, run_id: str) -> RunStatusResponse | None:
@@ -157,9 +206,20 @@ class OnboardingApplicationService:
         run = self.repository.get(run_id)
         if run is None or run.result is None:
             return None
+        logger.info(
+            "onboarding_refinement_started run_id=%s flow_mode=%s",
+            run.run_id,
+            self.settings.onboarding_flow_mode,
+        )
         try:
             refinement_output, refined = self.flow.refine(run, run.result, request.instruction)
         except Exception as exc:
+            logger.exception(
+                "onboarding_refinement_flow_failed run_id=%s flow_mode=%s error=%s",
+                run.run_id,
+                self.settings.onboarding_flow_mode,
+                exc,
+            )
             run.action_history.append(
                 self._action(
                     run.run_id,
@@ -178,6 +238,7 @@ class OnboardingApplicationService:
                 status="incomplete",
                 summary="Refinamento por Flow falhou; aplicado fallback deterministico.",
             )
+            logger.info("onboarding_refinement_fallback_applied run_id=%s", run.run_id)
         run.revision_number += 1
         run.result = refined
         run.markdown = self.markdown_renderer.render(refined)
@@ -196,6 +257,13 @@ class OnboardingApplicationService:
             )
         )
         self.repository.save(run)
+        logger.info(
+            "onboarding_refinement_completed run_id=%s revision_number=%s agent=%s status=%s",
+            run.run_id,
+            run.revision_number,
+            refinement_output.agent_name,
+            refinement_output.status,
+        )
         return RefinePlanResponse(
             runId=run.run_id,
             status=run.status,

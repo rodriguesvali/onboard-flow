@@ -1,5 +1,7 @@
 import json
+import logging
 import re
+from contextvars import ContextVar
 from importlib.resources import files
 from typing import Any
 
@@ -20,6 +22,12 @@ from onboardflow.domain.models import (
     ValidationResult,
 )
 
+logger = logging.getLogger("uvicorn.error")
+
+_crewai_run_id: ContextVar[str] = ContextVar("crewai_run_id", default="unknown")
+_crewai_operation: ContextVar[str] = ContextVar("crewai_operation", default="unknown")
+_crewai_logging_listener: object | None = None
+
 
 def _item(row: dict, status: ItemStatus = ItemStatus.PENDING) -> ResultItem:
     return ResultItem(
@@ -28,6 +36,197 @@ def _item(row: dict, status: ItemStatus = ItemStatus.PENDING) -> ResultItem:
         status=status,
         rationale=row.get("rationale"),
     )
+
+
+def _log_agent_started(flow_mode: str, run_id: str, task_id: str, agent_name: str) -> None:
+    logger.info(
+        "agent_operation_started flow_mode=%s run_id=%s task_id=%s agent=%s",
+        flow_mode,
+        run_id,
+        task_id,
+        agent_name,
+    )
+
+
+def _log_agent_completed(
+    flow_mode: str,
+    run_id: str,
+    task_id: str,
+    agent_name: str,
+    status: str,
+    summary: str,
+) -> None:
+    logger.info(
+        "agent_operation_completed flow_mode=%s run_id=%s task_id=%s agent=%s status=%s summary=%s",
+        flow_mode,
+        run_id,
+        task_id,
+        agent_name,
+        status,
+        summary,
+    )
+
+
+def _log_agent_failed(
+    flow_mode: str,
+    run_id: str,
+    task_id: str,
+    agent_name: str,
+    error: str,
+) -> None:
+    logger.exception(
+        "agent_operation_failed flow_mode=%s run_id=%s task_id=%s agent=%s error=%s",
+        flow_mode,
+        run_id,
+        task_id,
+        agent_name,
+        error,
+    )
+
+
+def _ensure_crewai_logging_listener() -> None:
+    global _crewai_logging_listener
+
+    if _crewai_logging_listener is not None:
+        return
+
+    try:
+        from crewai.events import BaseEventListener
+        from crewai.events.types.agent_events import (
+            AgentExecutionCompletedEvent,
+            AgentExecutionErrorEvent,
+            AgentExecutionStartedEvent,
+        )
+        from crewai.events.types.crew_events import (
+            CrewKickoffCompletedEvent,
+            CrewKickoffFailedEvent,
+            CrewKickoffStartedEvent,
+        )
+        from crewai.events.types.task_events import (
+            TaskCompletedEvent,
+            TaskFailedEvent,
+            TaskStartedEvent,
+        )
+    except ImportError as exc:
+        logger.warning("crewai_event_listener_unavailable error=%s", exc)
+        return
+
+    class CrewAILoggingEventListener(BaseEventListener):
+        def setup_listeners(self, crewai_event_bus):
+            @crewai_event_bus.on(CrewKickoffStartedEvent)
+            def on_crew_started(source, event):
+                logger.info(
+                    "crewai_crew_started run_id=%s operation=%s crew=%s",
+                    _crewai_run_id.get(),
+                    _crewai_operation.get(),
+                    _event_attr(event, "crew_name"),
+                )
+
+            @crewai_event_bus.on(CrewKickoffCompletedEvent)
+            def on_crew_completed(source, event):
+                logger.info(
+                    "crewai_crew_completed run_id=%s operation=%s crew=%s",
+                    _crewai_run_id.get(),
+                    _crewai_operation.get(),
+                    _event_attr(event, "crew_name"),
+                )
+
+            @crewai_event_bus.on(CrewKickoffFailedEvent)
+            def on_crew_failed(source, event):
+                logger.error(
+                    "crewai_crew_failed run_id=%s operation=%s crew=%s error=%s",
+                    _crewai_run_id.get(),
+                    _crewai_operation.get(),
+                    _event_attr(event, "crew_name"),
+                    _event_error(event),
+                )
+
+            @crewai_event_bus.on(TaskStartedEvent)
+            def on_task_started(source, event):
+                logger.info(
+                    "crewai_task_started run_id=%s operation=%s task=%s",
+                    _crewai_run_id.get(),
+                    _crewai_operation.get(),
+                    _event_task(event),
+                )
+
+            @crewai_event_bus.on(TaskCompletedEvent)
+            def on_task_completed(source, event):
+                logger.info(
+                    "crewai_task_completed run_id=%s operation=%s task=%s",
+                    _crewai_run_id.get(),
+                    _crewai_operation.get(),
+                    _event_task(event),
+                )
+
+            @crewai_event_bus.on(TaskFailedEvent)
+            def on_task_failed(source, event):
+                logger.error(
+                    "crewai_task_failed run_id=%s operation=%s task=%s error=%s",
+                    _crewai_run_id.get(),
+                    _crewai_operation.get(),
+                    _event_task(event),
+                    _event_error(event),
+                )
+
+            @crewai_event_bus.on(AgentExecutionStartedEvent)
+            def on_agent_started(source, event):
+                logger.info(
+                    "crewai_agent_started run_id=%s operation=%s agent=%s task=%s",
+                    _crewai_run_id.get(),
+                    _crewai_operation.get(),
+                    _event_agent(event),
+                    _event_task(event),
+                )
+
+            @crewai_event_bus.on(AgentExecutionCompletedEvent)
+            def on_agent_completed(source, event):
+                logger.info(
+                    "crewai_agent_completed run_id=%s operation=%s agent=%s task=%s",
+                    _crewai_run_id.get(),
+                    _crewai_operation.get(),
+                    _event_agent(event),
+                    _event_task(event),
+                )
+
+            @crewai_event_bus.on(AgentExecutionErrorEvent)
+            def on_agent_failed(source, event):
+                logger.error(
+                    "crewai_agent_failed run_id=%s operation=%s agent=%s task=%s error=%s",
+                    _crewai_run_id.get(),
+                    _crewai_operation.get(),
+                    _event_agent(event),
+                    _event_task(event),
+                    _event_error(event),
+                )
+
+    _crewai_logging_listener = CrewAILoggingEventListener()
+
+
+def _event_attr(event: object, name: str) -> str:
+    value = getattr(event, name, None)
+    return str(value) if value is not None else "unknown"
+
+
+def _event_agent(event: object) -> str:
+    agent = getattr(event, "agent", None)
+    role = getattr(agent, "role", None)
+    if role:
+        return str(role)
+    return _event_attr(event, "agent_role")
+
+
+def _event_task(event: object) -> str:
+    task = getattr(event, "task", None)
+    description = getattr(task, "description", None)
+    if description:
+        return str(description).splitlines()[0][:160]
+    return _event_attr(event, "task_id")
+
+
+def _event_error(event: object) -> str:
+    error = getattr(event, "error", None) or getattr(event, "exception", None)
+    return str(error)[:500] if error is not None else "unknown"
 
 
 class DeterministicOnboardingFlow:
@@ -53,11 +252,72 @@ class DeterministicOnboardingFlow:
             workMode=employee.work_mode,
         )
 
-        required_documents = [_item(row) for row in self.catalog.required_documents(employee)]
-        it_items = [_item(row) for row in self.catalog.it_access_rules(employee)]
-        training_items = [
-            _item(row, ItemStatus.RECOMMENDED) for row in self.catalog.training_items(employee)
-        ]
+        _log_agent_started(
+            "deterministic", run.run_id, "generate_document_checklist", "Compliance"
+        )
+        try:
+            required_documents = [_item(row) for row in self.catalog.required_documents(employee)]
+        except Exception as exc:
+            _log_agent_failed(
+                "deterministic",
+                run.run_id,
+                "generate_document_checklist",
+                "Compliance",
+                str(exc),
+            )
+            raise
+        _log_agent_completed(
+            "deterministic",
+            run.run_id,
+            "generate_document_checklist",
+            "Compliance",
+            "done",
+            f"{len(required_documents)} documento(s) obrigatorio(s) identificado(s).",
+        )
+
+        _log_agent_started("deterministic", run.run_id, "generate_it_checklist", "IT Provisioning")
+        try:
+            it_items = [_item(row) for row in self.catalog.it_access_rules(employee)]
+        except Exception as exc:
+            _log_agent_failed(
+                "deterministic",
+                run.run_id,
+                "generate_it_checklist",
+                "IT Provisioning",
+                str(exc),
+            )
+            raise
+        _log_agent_completed(
+            "deterministic",
+            run.run_id,
+            "generate_it_checklist",
+            "IT Provisioning",
+            "done",
+            f"{len(it_items)} item(ns) de TI identificado(s).",
+        )
+
+        _log_agent_started("deterministic", run.run_id, "generate_training_path", "Training")
+        try:
+            training_items = [
+                _item(row, ItemStatus.RECOMMENDED) for row in self.catalog.training_items(employee)
+            ]
+        except Exception as exc:
+            _log_agent_failed(
+                "deterministic",
+                run.run_id,
+                "generate_training_path",
+                "Training",
+                str(exc),
+            )
+            raise
+        _log_agent_completed(
+            "deterministic",
+            run.run_id,
+            "generate_training_path",
+            "Training",
+            "done",
+            f"{len(training_items)} item(ns) de treinamento identificado(s).",
+        )
         agenda_items = [
             ResultItem(
                 title="Reuniao de boas-vindas com gestor",
@@ -72,10 +332,31 @@ class DeterministicOnboardingFlow:
                 rationale="Confirma pendencias antes de qualquer comunicacao externa.",
             ),
         ]
-        communications = [
-            self._render_template(template, employee)
-            for template in self.catalog.communication_templates()
-        ]
+        _log_agent_started(
+            "deterministic", run.run_id, "draft_stakeholder_messages", "Communication"
+        )
+        try:
+            communications = [
+                self._render_template(template, employee)
+                for template in self.catalog.communication_templates()
+            ]
+        except Exception as exc:
+            _log_agent_failed(
+                "deterministic",
+                run.run_id,
+                "draft_stakeholder_messages",
+                "Communication",
+                str(exc),
+            )
+            raise
+        _log_agent_completed(
+            "deterministic",
+            run.run_id,
+            "draft_stakeholder_messages",
+            "Communication",
+            "done",
+            f"{len(communications)} comunicado(s) em rascunho preparado(s).",
+        )
         pending_actions = [
             *required_documents,
             *[item for item in it_items if item.status == ItemStatus.PENDING],
@@ -151,7 +432,26 @@ class DeterministicOnboardingFlow:
     def refine(
         self, run: OnboardingRun, current_plan: OnboardingPlanResult, instruction: str
     ) -> tuple[SpecialistOutput, OnboardingPlanResult]:
-        refined = _apply_refinement(current_plan, instruction)
+        _log_agent_started("deterministic", run.run_id, "refine_plan_revision", "Refinement")
+        try:
+            refined = _apply_refinement(current_plan, instruction)
+        except Exception as exc:
+            _log_agent_failed(
+                "deterministic",
+                run.run_id,
+                "refine_plan_revision",
+                "Refinement",
+                str(exc),
+            )
+            raise
+        _log_agent_completed(
+            "deterministic",
+            run.run_id,
+            "refine_plan_revision",
+            "Refinement",
+            "done",
+            "Plano refinado com regra deterministica local.",
+        )
         output = SpecialistOutput(
             taskId="refine_plan_revision",
             agentName="Refinement",
@@ -255,6 +555,7 @@ class LiveCrewAIOnboardingFlow:
     def execute(
         self, run: OnboardingRun, employee: EmployeeOnboardingInput, validation: ValidationResult
     ) -> tuple[list[SpecialistOutput], OnboardingPlanResult]:
+        _ensure_crewai_logging_listener()
         crewai = self._import_crewai()
         agents = self._build_agents(crewai)
         tasks = self._build_tasks(crewai, agents)
@@ -264,13 +565,20 @@ class LiveCrewAIOnboardingFlow:
             process=crewai["Process"].sequential,
             verbose=self.settings.crewai_verbose,
         )
-        crew.kickoff(inputs=self._crew_inputs(run, employee, validation))
+        run_token = _crewai_run_id.set(run.run_id)
+        operation_token = _crewai_operation.set("generation")
+        try:
+            crew.kickoff(inputs=self._crew_inputs(run, employee, validation))
+        finally:
+            _crewai_operation.reset(operation_token)
+            _crewai_run_id.reset(run_token)
         outputs = [self._read_task_output(task_id, tasks[task_id]) for task_id in self.TASK_ORDER]
         return outputs, self._normalize_plan(employee, validation, outputs)
 
     def refine(
         self, run: OnboardingRun, current_plan: OnboardingPlanResult, instruction: str
     ) -> tuple[SpecialistOutput, OnboardingPlanResult]:
+        _ensure_crewai_logging_listener()
         crewai = self._import_crewai()
         agents = self._build_agents(crewai)
         task = self._build_refinement_task(crewai, agents["refinement_agent"])
@@ -280,7 +588,13 @@ class LiveCrewAIOnboardingFlow:
             process=crewai["Process"].sequential,
             verbose=self.settings.crewai_verbose,
         )
-        crew.kickoff(inputs=self._refinement_inputs(run, current_plan, instruction))
+        run_token = _crewai_run_id.set(run.run_id)
+        operation_token = _crewai_operation.set("refinement")
+        try:
+            crew.kickoff(inputs=self._refinement_inputs(run, current_plan, instruction))
+        finally:
+            _crewai_operation.reset(operation_token)
+            _crewai_run_id.reset(run_token)
         refined_plan = self._read_plan_output(task)
         output_status = "done"
         summary = "Plano refinado por agente CrewAI e validado pelo Flow."

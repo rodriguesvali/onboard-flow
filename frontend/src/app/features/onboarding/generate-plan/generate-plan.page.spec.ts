@@ -231,7 +231,7 @@ describe('GeneratePlanPage', () => {
         setValue(value: Record<string, string | Date | null>): void;
       };
       run(): void;
-      reviewFeedback: { setValue(value: string): void };
+      reviewFeedback: { setValue(value: string): void; value: string };
     };
 
     component.form.setValue({
@@ -280,6 +280,7 @@ describe('GeneratePlanPage', () => {
       'mock-run-1',
       'Revisar prazos da agenda inicial.',
     );
+    expect(component.reviewFeedback.value).toBe('');
     expect(fixture.nativeElement.textContent).toContain(
       'Ajustes aplicados ao plano. Revise a nova versao antes de aprovar.',
     );

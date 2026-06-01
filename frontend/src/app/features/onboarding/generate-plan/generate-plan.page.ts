@@ -269,6 +269,8 @@ export class GeneratePlanPage {
         );
         this.reviewDecision.set('changes_requested');
         this.reviewFeedbackOpen.set(false);
+        this.reviewFeedbackSubmitted.set(false);
+        this.reviewFeedback.reset('');
         this.refinementRunning.set(false);
       },
       error: (error: unknown) => {

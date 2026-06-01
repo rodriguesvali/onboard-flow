@@ -125,3 +125,34 @@ Review focus:
 - Confirm the mocked service boundary is acceptable before backend/integration work.
 - Confirm whether session-local review decisions are sufficient for this frontend slice or should move to backend persistence in the next step.
 - Confirm whether `project-context/2.build/setup.md` should be generated next by `@project.mgr`.
+
+## 7. Post-QA Review Feedback Cleanup
+
+Date: 2026-06-01
+Status: Approved by Agentic Architect
+
+Implemented after Agentic Architect observed that the `Solicitar ajustes` text box kept the previous adjustment text after the backend refinement completed.
+
+Documentation/tooling checked before implementation:
+
+- Context7 Angular documentation for Reactive Forms `FormControl.reset()`.
+
+Changed behavior:
+
+- After `Registrar solicitacao` succeeds against the backend, the review feedback control is reset to an empty value and its submitted state is cleared.
+- The refinement request payload and rendered refined plan remain unchanged.
+
+Validation evidence:
+
+```text
+npm test -- --watch=false
+npm run build
+npx prettier --check .
+```
+
+Results:
+
+- Frontend tests passed: 4 files, 15 tests.
+- Angular production build passed.
+- Prettier check passed.
+- Agentic Architect manually tested and approved that the field is clearing after registering the adjustment request.

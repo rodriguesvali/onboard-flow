@@ -139,6 +139,21 @@ Observed non-blocking issue:
 
 - The local backend reads runtime mode from environment configuration. When the operator wants provider-free smoke validation, the command should set `ONBOARDFLOW_FLOW_MODE=deterministic` explicitly; otherwise a local `.env` configured for CrewAI can attempt live execution.
 
+Post-QA instrumentation refinement approved by Agentic Architect:
+
+- Agentic Architect requested backend log visibility for the start and end of each agent operation, including deterministic mode.
+- Backend instrumentation was added through startup mode logs, application logs, deterministic Flow logs, and CrewAI Event Listener logs for live CrewAI mode.
+- Validation after refinement: `uv run pytest` passed with 3 files and 12 tests; `uv run python -m compileall src tests` passed.
+- Uvicorn startup smoke confirmed the configured mode is printed in the terminal through the server logger.
+- Agentic Architect approved the backend log instrumentation refinement.
+
+Post-QA frontend refinement approved by Agentic Architect:
+
+- Agentic Architect observed that the `Solicitar ajustes` text box kept its previous value after a successful backend refinement.
+- Frontend now resets the review feedback `FormControl` after `Registrar solicitacao` succeeds.
+- Validation after refinement: `npm test -- --watch=false` passed with 4 files and 15 tests; `npm run build` passed; `npx prettier --check .` passed.
+- Agentic Architect manually tested and approved that the field is clearing after registering the adjustment request.
+
 ## 6. Limitations And Follow-up QA
 
 Recommended follow-up before broader demo or delivery:

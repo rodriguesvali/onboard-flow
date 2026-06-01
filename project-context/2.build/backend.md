@@ -174,3 +174,39 @@ Live provider validation on 2026-05-31:
 - Five specialist task actions were persisted: HR Intake, Compliance, IT Provisioning, Training, and Communication.
 - Normalized final plan preserved deterministic catalog sections: 2 required documents, 3 IT checklist items, 3 training items, and 4 communication drafts.
 - Adjusted Flow normalization so CrewAI can enrich risks, pending actions, summaries, and drafts, while document/IT/training section membership remains catalog-derived and deterministic.
+
+## 8. Post-QA Backend Log Instrumentation
+
+Date: 2026-06-01
+Status: Approved by Agentic Architect
+
+Implemented after Agentic Architect direction to instrument backend processing with log messages only, without changing UI behavior or public API contracts.
+
+Documentation/tooling checked before implementation:
+
+- Context7 CrewAI documentation for current Event Listener and event bus usage.
+
+Included:
+
+- Startup log prints the configured backend flow mode through the visible Uvicorn server logger as `onboardflow_backend_started flow_mode=<deterministic|crewai>`.
+- Application-level logs for onboarding generation start/completion, input validation start/completion, Flow execution start/completion/failure, plan normalization, refinement start/completion, and refinement fallback.
+- Deterministic-mode agent-operation logs for document checklist, IT checklist, training path, stakeholder message draft generation, and refinement.
+- CrewAI-mode Event Listener registration using CrewAI's event bus for Crew kickoff start/completion/failure, Task start/completion/failure, and Agent execution start/completion/failure events.
+- Context variables around CrewAI kickoff to include the current `run_id` and operation type (`generation` or `refinement`) in CrewAI event logs.
+- Tests using `caplog` to verify startup mode, deterministic generation, and refinement operation logs.
+- Manual Uvicorn smoke confirmed the startup line appears in the terminal; the current local `.env` reported `flow_mode=crewai`.
+
+Validation evidence:
+
+```text
+uv run pytest
+uv run python -m compileall src tests
+```
+
+Results:
+
+- Backend tests passed: 3 files, 12 tests.
+- Compileall passed for `src` and `tests`.
+- Short Uvicorn startup smoke on port 8010 printed `onboardflow_backend_started flow_mode=crewai`.
+- Existing warning remains from Starlette/FastAPI TestClient requesting future `httpx2`; unrelated to instrumentation.
+- Agentic Architect approved the backend log instrumentation refinement.
