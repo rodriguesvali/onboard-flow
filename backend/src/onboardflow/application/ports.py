@@ -34,3 +34,6 @@ class OnboardingFlowPort(Protocol):
         self, run: OnboardingRun, employee: EmployeeOnboardingInput, validation: ValidationResult
     ) -> tuple[list[SpecialistOutput], OnboardingPlanResult]: ...
 
+    def refine(
+        self, run: OnboardingRun, current_plan: OnboardingPlanResult, instruction: str
+    ) -> tuple[SpecialistOutput, OnboardingPlanResult]: ...

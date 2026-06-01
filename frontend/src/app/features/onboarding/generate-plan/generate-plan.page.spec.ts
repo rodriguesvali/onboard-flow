@@ -281,8 +281,10 @@ describe('GeneratePlanPage', () => {
       'Revisar prazos da agenda inicial.',
     );
     expect(fixture.nativeElement.textContent).toContain(
-      'Solicitacao de ajustes registrada nesta sessao de revisao.',
+      'Ajustes aplicados ao plano. Revise a nova versao antes de aprovar.',
     );
+    expect(fixture.nativeElement.textContent).toContain('Resumo refinado.');
+    expect(fixture.nativeElement.textContent).toContain('Ajuste solicitado pelo RH');
     expect(fixture.nativeElement.textContent).toContain('Revisar prazos da agenda inicial.');
   });
 });

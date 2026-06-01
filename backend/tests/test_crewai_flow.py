@@ -8,6 +8,7 @@ from onboardflow.domain.models import (
     EmployeeOnboardingInput,
     ItemStatus,
     OnboardingRun,
+    OnboardingPlanResult,
     ResultItem,
     SpecialistOutput,
     ValidationResult,
@@ -40,6 +41,19 @@ class FakeCrew:
         self.tasks = kwargs["tasks"]
 
     def kickoff(self, inputs):
+        if "current_plan_json" in inputs:
+            current_plan = OnboardingPlanResult.model_validate_json(inputs["current_plan_json"])
+            data = current_plan.model_dump(mode="json", by_alias=True)
+            data["executiveSummary"] = "Resumo refinado pelo fake CrewAI."
+            data["status"] = "draft"
+            task = self.tasks[0]
+            task.output = SimpleNamespace(
+                pydantic=OnboardingPlanResult.model_validate(data),
+                json_dict=None,
+                raw="",
+            )
+            return
+
         assert "employee_json" in inputs
         for task in self.tasks:
             task_id = task.config["description"].split("Task id: ", 1)[1].split(".", 1)[0]
@@ -119,3 +133,39 @@ def test_live_crewai_flow_executes_crew_and_normalizes_plan(monkeypatch, employe
     assert all(item.title != "Crew document" for item in plan.it_checklist)
     assert plan.communications[0].subject == "Crew subject"
     assert plan.status == "ready_for_review"
+
+
+def test_live_crewai_flow_refines_plan_with_structured_output(monkeypatch, employee_payload):
+    employee = EmployeeOnboardingInput.model_validate(employee_payload)
+    flow = LiveCrewAIOnboardingFlow(
+        JsonCatalogAdapter(),
+        Settings(onboarding_flow_mode="crewai"),
+    )
+    monkeypatch.setattr(
+        flow,
+        "_import_crewai",
+        lambda: {
+            "Agent": FakeAgent,
+            "Crew": FakeCrew,
+            "LLM": FakeLLM,
+            "Process": FakeProcess,
+            "Task": FakeTask,
+        },
+    )
+    _, current_plan = flow._deterministic.execute(
+        OnboardingRun(),
+        employee,
+        ValidationResult(status="complete"),
+    )
+
+    output, refined = flow.refine(
+        OnboardingRun(),
+        current_plan,
+        "Revisar prazos da agenda inicial.",
+    )
+
+    assert output.status == "done"
+    assert output.task_id == "refine_plan_revision"
+    assert refined.executive_summary == "Resumo refinado pelo fake CrewAI."
+    assert refined.status == "draft"
+    assert any(item.title == "Ajuste solicitado pelo RH" for item in refined.pending_actions)

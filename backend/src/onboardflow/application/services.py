@@ -18,6 +18,7 @@ from onboardflow.domain.models import (
     ResultItem,
     RunStatus,
     RunStatusResponse,
+    SpecialistOutput,
     StartRunResponse,
     ValidationIssue,
     ValidationResult,
@@ -156,7 +157,27 @@ class OnboardingApplicationService:
         run = self.repository.get(run_id)
         if run is None or run.result is None:
             return None
-        refined = self._apply_refinement(run.result, request.instruction)
+        try:
+            refinement_output, refined = self.flow.refine(run, run.result, request.instruction)
+        except Exception as exc:
+            run.action_history.append(
+                self._action(
+                    run.run_id,
+                    "flow_refinement_failed",
+                    f"{exc.__class__.__name__}: {str(exc)[:300]}",
+                    task_id="refine_plan_revision",
+                    agent_name="Refinement",
+                    model_profile="refinement",
+                    validation_result="error",
+                )
+            )
+            refined = self._fallback_refinement(run.result, request.instruction)
+            refinement_output = SpecialistOutput(
+                taskId="refine_plan_revision",
+                agentName="Refinement",
+                status="incomplete",
+                summary="Refinamento por Flow falhou; aplicado fallback deterministico.",
+            )
         run.revision_number += 1
         run.result = refined
         run.markdown = self.markdown_renderer.render(refined)
@@ -169,8 +190,9 @@ class OnboardingApplicationService:
                 "plan_refined",
                 f"Instrucao aplicada: {request.instruction}",
                 task_id="refine_plan_revision",
+                agent_name=refinement_output.agent_name,
                 model_profile="refinement",
-                validation_result="done",
+                validation_result=refinement_output.status,
             )
         )
         self.repository.save(run)
@@ -184,7 +206,7 @@ class OnboardingApplicationService:
             validationResult=ValidationResult(status="complete"),
         )
 
-    def _apply_refinement(
+    def _fallback_refinement(
         self, plan: OnboardingPlanResult, instruction: str
     ) -> OnboardingPlanResult:
         data = plan.model_dump(mode="json", by_alias=True)
@@ -239,4 +261,3 @@ class OnboardingApplicationService:
         if "document" in task_id:
             return "reasoning"
         return "default"
-

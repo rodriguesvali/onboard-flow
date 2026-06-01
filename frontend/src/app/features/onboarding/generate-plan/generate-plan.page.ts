@@ -141,7 +141,7 @@ export class GeneratePlanPage {
         case 'approved':
           return 'Plano aprovado nesta sessao de revisao. Nenhuma comunicacao foi enviada.';
         case 'changes_requested':
-          return 'Solicitacao de ajustes registrada nesta sessao de revisao.';
+          return 'Ajustes aplicados ao plano. Revise a nova versao antes de aprovar.';
         case 'pending':
         default:
           return 'Plano de onboarding gerado para revisao humana.';

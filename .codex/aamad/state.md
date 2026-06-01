@@ -18,7 +18,7 @@ Approved Define artifacts:
 - `project-context/1.define/prd.md`
 - `project-context/1.define/sad.md`
 
-The current stage is integration Build implementation review under AAMAD Flow.
+The current stage is QA Build validation review under AAMAD Flow.
 
 The frontend Build implementation review gate is completed and approved under AAMAD Flow.
 
@@ -34,11 +34,12 @@ Approved Build implementation artifacts:
 - `project-context/2.build/backend-implementation-plan.md`
 - `project-context/2.build/backend.md`
 - `backend/` Python FastAPI + CrewAI boundary scaffold and Generate/Run/Refine implementation
+- `project-context/2.build/integration.md`
+- `frontend/` Angular-to-FastAPI integration update
 
 Pending Agentic Architect review:
 
-- `project-context/2.build/integration.md`
-- `frontend/` Angular-to-FastAPI integration update
+- `project-context/2.build/qa.md`
 
 Approved role refinements:
 
@@ -46,7 +47,7 @@ Approved role refinements:
 - `.codex/aamad/agents/backend-eng.md`
 - `.codex/aamad/agents/integration-eng.md`
 
-Backend base implementation and CrewAI live execution update gates are approved. Integration implementation review gate is pending Agentic Architect decision.
+Backend base implementation, CrewAI live execution update, and integration implementation gates are approved. QA validation review gate is pending Agentic Architect decision.
 
 ## Review Gate
 
@@ -64,4 +65,6 @@ Current frontend implementation review gate is approved as recorded in `.codex/a
 
 Current backend base implementation and CrewAI live execution update review gates are approved as recorded in `.codex/aamad/review-log.md`.
 
-Current integration implementation review gate is pending Agentic Architect decision.
+Current integration implementation review gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current QA validation review gate is pending Agentic Architect decision.

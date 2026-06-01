@@ -34,3 +34,7 @@ draft_stakeholder_messages:
     - generate_it_checklist
     - generate_training_path
 
+refine_onboarding_plan:
+  description: Revise the current onboarding plan according to one HR refinement instruction.
+  expected_output: JSON matching the complete onboarding plan result contract.
+  agent: refinement_agent

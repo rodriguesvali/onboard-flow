@@ -45,6 +45,32 @@ describe('transitionGeneratePlan', () => {
     expect(done.result).toBe(result);
   });
 
+  it('replaces an existing result when a refinement returns an updated plan', () => {
+    const running = transitionGeneratePlan(initialGeneratePlanViewModel, { type: 'RUN_CLICKED' });
+    const started = transitionGeneratePlan(running, {
+      type: 'RUN_STARTED',
+      runId: 'mock-run-1',
+    });
+    const done = transitionGeneratePlan(started, {
+      type: 'RUN_DONE',
+      result,
+    });
+    const refinedResult: OnboardingPlanResult = {
+      ...result,
+      executiveSummary: 'Resumo refinado.',
+      status: 'draft',
+    };
+
+    const refined = transitionGeneratePlan(done, {
+      type: 'RUN_DONE',
+      result: refinedResult,
+    });
+
+    expect(refined.state).toBe('done');
+    expect(refined.runId).toBe('mock-run-1');
+    expect(refined.result).toBe(refinedResult);
+  });
+
   it('ignores invalid done transitions', () => {
     const next = transitionGeneratePlan(initialGeneratePlanViewModel, {
       type: 'RUN_DONE',

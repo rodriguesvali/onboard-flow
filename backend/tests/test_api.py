@@ -41,8 +41,12 @@ def test_refine_adds_revision_and_preserves_schema(client, employee_payload):
     assert body["status"] == "done"
     assert body["revisionNumber"] == 2
     assert body["result"]["status"] == "draft"
+    assert "Ajustes solicitados pelo RH foram incorporados" in body["result"]["executiveSummary"]
+    assert any(
+        item["title"] == "Revisao da agenda inicial solicitada"
+        for item in body["result"]["initialAgenda"]
+    )
     assert any(
         item["title"] == "Ajuste solicitado pelo RH"
         for item in body["result"]["pendingActions"]
     )
-

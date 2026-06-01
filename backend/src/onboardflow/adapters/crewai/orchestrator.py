@@ -148,6 +148,29 @@ class DeterministicOnboardingFlow:
         ]
         return outputs, plan
 
+    def refine(
+        self, run: OnboardingRun, current_plan: OnboardingPlanResult, instruction: str
+    ) -> tuple[SpecialistOutput, OnboardingPlanResult]:
+        refined = _apply_refinement(current_plan, instruction)
+        output = SpecialistOutput(
+            taskId="refine_plan_revision",
+            agentName="Refinement",
+            status="done",
+            summary="Plano refinado com regra deterministica local.",
+            pendingActions=[
+                ResultItem(
+                    title="Ajuste solicitado pelo RH",
+                    ownerRole="RH",
+                    status=ItemStatus.PENDING,
+                    rationale=instruction,
+                )
+            ],
+            assumptions=["Refinamento deterministico preserva o contrato do MVP."],
+            inputSources=["current_plan", "refinement_instruction"],
+            qualityChecks=["json_schema_valid", "human_review_required"],
+        )
+        return output, refined
+
     def _render_template(
         self, template: dict, employee: EmployeeOnboardingInput
     ) -> CommunicationDraft:
@@ -211,6 +234,7 @@ class LiveCrewAIOnboardingFlow:
         "it_provisioning_agent": "tool_calling",
         "training_agent": "efficient",
         "communication_agent": "creative",
+        "refinement_agent": "refinement",
     }
     AGENT_DISPLAY_NAMES = {
         "hr_intake_agent": "HR Intake",
@@ -218,6 +242,7 @@ class LiveCrewAIOnboardingFlow:
         "it_provisioning_agent": "IT Provisioning",
         "training_agent": "Training",
         "communication_agent": "Communication",
+        "refinement_agent": "Refinement",
     }
 
     def __init__(self, catalog: CatalogPort, settings: Settings) -> None:
@@ -242,6 +267,45 @@ class LiveCrewAIOnboardingFlow:
         crew.kickoff(inputs=self._crew_inputs(run, employee, validation))
         outputs = [self._read_task_output(task_id, tasks[task_id]) for task_id in self.TASK_ORDER]
         return outputs, self._normalize_plan(employee, validation, outputs)
+
+    def refine(
+        self, run: OnboardingRun, current_plan: OnboardingPlanResult, instruction: str
+    ) -> tuple[SpecialistOutput, OnboardingPlanResult]:
+        crewai = self._import_crewai()
+        agents = self._build_agents(crewai)
+        task = self._build_refinement_task(crewai, agents["refinement_agent"])
+        crew = crewai["Crew"](
+            agents=[agents["refinement_agent"]],
+            tasks=[task],
+            process=crewai["Process"].sequential,
+            verbose=self.settings.crewai_verbose,
+        )
+        crew.kickoff(inputs=self._refinement_inputs(run, current_plan, instruction))
+        refined_plan = self._read_plan_output(task)
+        output_status = "done"
+        summary = "Plano refinado por agente CrewAI e validado pelo Flow."
+        if refined_plan is None:
+            refined_plan = _apply_refinement(current_plan, instruction)
+            output_status = "incomplete"
+            summary = "Saida do agente de refinamento invalida; aplicado fallback deterministico."
+        refined_plan = self._normalize_refined_plan(current_plan, refined_plan, instruction)
+        output = SpecialistOutput(
+            taskId="refine_plan_revision",
+            agentName=self.AGENT_DISPLAY_NAMES["refinement_agent"],
+            status=output_status,
+            summary=summary,
+            pendingActions=[
+                ResultItem(
+                    title="Ajuste solicitado pelo RH",
+                    ownerRole="RH",
+                    status=ItemStatus.PENDING,
+                    rationale=instruction,
+                )
+            ],
+            inputSources=["current_plan", "refinement_instruction", "crewai"],
+            qualityChecks=["json_schema_valid", "human_review_required"],
+        )
+        return output, refined_plan
 
     def _import_crewai(self) -> dict[str, Any]:
         try:
@@ -284,6 +348,28 @@ class LiveCrewAIOnboardingFlow:
                 output_json=SpecialistOutput,
             )
         return tasks
+
+    def _build_refinement_task(self, crewai: dict[str, Any], agent: Any) -> Any:
+        config = dict(self.tasks_config["refine_onboarding_plan"])
+        config["description"] = (
+            config["description"]
+            + "\n\nCurrent plan JSON: {current_plan_json}\n"
+            + "Refinement instruction: {refinement_instruction}\n"
+            + "Return a complete OnboardingPlanResult JSON object. Preserve the employee profile "
+            + "and do not claim that messages were sent, access was provisioned, systems were "
+            + "changed, or a plan was approved. Set status to draft unless the instruction only "
+            + "clarifies copy without changing review state."
+        )
+        config["expected_output"] = (
+            "A complete JSON object matching OnboardingPlanResult: employeeProfile, "
+            "executiveSummary, requiredDocuments, itChecklist, trainingPath, initialAgenda, "
+            "communications, pendingActions, riskFlags, status, and nextRecommendedActions."
+        )
+        return crewai["Task"](
+            config=config,
+            agent=agent,
+            output_json=OnboardingPlanResult,
+        )
 
     def _task_description(self, task_id: str, base: str) -> str:
         return (
@@ -329,6 +415,15 @@ class LiveCrewAIOnboardingFlow:
             "catalog_json": json.dumps(catalog, ensure_ascii=True),
         }
 
+    def _refinement_inputs(
+        self, run: OnboardingRun, current_plan: OnboardingPlanResult, instruction: str
+    ) -> dict[str, str]:
+        return {
+            "run_id": run.run_id,
+            "current_plan_json": current_plan.model_dump_json(by_alias=True),
+            "refinement_instruction": instruction,
+        }
+
     def _read_task_output(self, task_id: str, task: Any) -> SpecialistOutput:
         task_output = getattr(task, "output", None)
         agent_id = self.AGENT_BY_TASK[task_id]
@@ -357,6 +452,33 @@ class LiveCrewAIOnboardingFlow:
             return SpecialistOutput.model_validate(json.loads(self._extract_json(raw)))
         except (json.JSONDecodeError, ValidationError, TypeError):
             return self._fallback_output(task_id, agent_name, raw[:500])
+
+    def _read_plan_output(self, task: Any) -> OnboardingPlanResult | None:
+        task_output = getattr(task, "output", None)
+        if task_output is None:
+            return None
+
+        pydantic_output = getattr(task_output, "pydantic", None)
+        if isinstance(pydantic_output, OnboardingPlanResult):
+            return pydantic_output
+        if pydantic_output is not None:
+            try:
+                return OnboardingPlanResult.model_validate(pydantic_output)
+            except ValidationError:
+                pass
+
+        json_dict = getattr(task_output, "json_dict", None)
+        if json_dict:
+            try:
+                return OnboardingPlanResult.model_validate(json_dict)
+            except ValidationError:
+                pass
+
+        raw = getattr(task_output, "raw", "") or str(task_output)
+        try:
+            return OnboardingPlanResult.model_validate(json.loads(self._extract_json(raw)))
+        except (json.JSONDecodeError, ValidationError, TypeError):
+            return None
 
     def _extract_json(self, raw: str) -> str:
         stripped = raw.strip()
@@ -444,6 +566,41 @@ class LiveCrewAIOnboardingFlow:
             nextRecommendedActions=baseline.next_recommended_actions,
         )
 
+    def _normalize_refined_plan(
+        self,
+        current_plan: OnboardingPlanResult,
+        refined_plan: OnboardingPlanResult,
+        instruction: str,
+    ) -> OnboardingPlanResult:
+        data = refined_plan.model_dump(mode="json", by_alias=True)
+        data["employeeProfile"] = current_plan.employee_profile.model_dump(
+            mode="json", by_alias=True
+        )
+        data["status"] = PlanStatus.DRAFT
+        data["pendingActions"] = self._merge_items(
+            [
+                ResultItem.model_validate(item)
+                for item in data.get("pendingActions", [])
+            ],
+            [
+                ResultItem(
+                    title="Ajuste solicitado pelo RH",
+                    ownerRole="RH",
+                    status=ItemStatus.PENDING,
+                    rationale=instruction,
+                )
+            ],
+        )
+        data["pendingActions"] = [
+            item.model_dump(mode="json", by_alias=True) for item in data["pendingActions"]
+        ]
+        next_actions = list(data.get("nextRecommendedActions", []))
+        review_action = "Revisar a versao refinada antes da aprovacao."
+        if review_action not in next_actions:
+            next_actions = [review_action, *next_actions]
+        data["nextRecommendedActions"] = next_actions
+        return OnboardingPlanResult.model_validate(data)
+
     def _merge_items(self, *groups: list[ResultItem]) -> list[ResultItem]:
         merged: list[ResultItem] = []
         seen: set[tuple[str, str]] = set()
@@ -466,3 +623,79 @@ def build_onboarding_flow(catalog: CatalogPort, settings: Settings) -> Onboardin
     if settings.onboarding_flow_mode == "crewai":
         return LiveCrewAIOnboardingFlow(catalog, settings)
     return DeterministicOnboardingFlow(catalog)
+
+
+def _apply_refinement(
+    plan: OnboardingPlanResult, instruction: str
+) -> OnboardingPlanResult:
+    data = plan.model_dump(mode="json", by_alias=True)
+    adjustment = ResultItem(
+        title="Ajuste solicitado pelo RH",
+        ownerRole="RH",
+        status=ItemStatus.PENDING,
+        rationale=instruction,
+    )
+    data["executiveSummary"] = (
+        f"{data['executiveSummary']} Ajustes solicitados pelo RH foram incorporados "
+        "como nova versao de rascunho para revisao humana."
+    )
+    data["pendingActions"].append(adjustment.model_dump(mode="json", by_alias=True))
+    for section_name, item in _section_adjustments(instruction).items():
+        data[section_name].append(item.model_dump(mode="json", by_alias=True))
+    data["nextRecommendedActions"] = [
+        "Revisar a nova versao ajustada antes da aprovacao.",
+        *data["nextRecommendedActions"],
+    ]
+    data["status"] = PlanStatus.DRAFT
+    return OnboardingPlanResult.model_validate(data)
+
+
+def _section_adjustments(instruction: str) -> dict[str, ResultItem]:
+    normalized = instruction.lower()
+    adjustments: dict[str, ResultItem] = {}
+    if any(token in normalized for token in ["agenda", "prazo", "prazos", "reuniao", "reunião"]):
+        adjustments["initialAgenda"] = ResultItem(
+            title="Revisao da agenda inicial solicitada",
+            ownerRole="RH",
+            status=ItemStatus.PENDING,
+            rationale=instruction,
+        )
+    if any(token in normalized for token in ["documento", "documentacao", "documentação"]):
+        adjustments["requiredDocuments"] = ResultItem(
+            title="Revisao de documentos solicitada",
+            ownerRole="RH",
+            status=ItemStatus.PENDING,
+            rationale=instruction,
+        )
+    if any(
+        token in normalized
+        for token in ["it", "ti", "acesso", "acessos", "equipamento", "notebook", "vpn"]
+    ):
+        adjustments["itChecklist"] = ResultItem(
+            title="Revisao de acessos e equipamentos solicitada",
+            ownerRole="IT",
+            status=ItemStatus.PENDING,
+            rationale=instruction,
+        )
+    if any(token in normalized for token in ["treinamento", "treinamentos", "trilha", "curso"]):
+        adjustments["trainingPath"] = ResultItem(
+            title="Revisao da trilha de treinamento solicitada",
+            ownerRole="Treinamento",
+            status=ItemStatus.RECOMMENDED,
+            rationale=instruction,
+        )
+    if any(token in normalized for token in ["risco", "riscos", "bloqueio", "bloqueios"]):
+        adjustments["riskFlags"] = ResultItem(
+            title="Revisao de riscos solicitada",
+            ownerRole="RH",
+            status=ItemStatus.RECOMMENDED,
+            rationale=instruction,
+        )
+    if not adjustments:
+        adjustments["pendingActions"] = ResultItem(
+            title="Revisao geral solicitada",
+            ownerRole="RH",
+            status=ItemStatus.PENDING,
+            rationale=instruction,
+        )
+    return adjustments
