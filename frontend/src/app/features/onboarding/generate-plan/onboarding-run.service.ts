@@ -1,164 +1,55 @@
-import { Injectable } from '@angular/core';
-import { delay, Observable, of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Inject, Injectable, InjectionToken } from '@angular/core';
+import { catchError, filter, Observable, switchMap, take, throwError, timeout, timer } from 'rxjs';
 
 import {
   EmployeeOnboardingInput,
-  OnboardingPlanResult,
+  RefinePlanResponse,
   RunStatusResponse,
   StartRunResponse,
 } from './onboarding-run.models';
 
+export const ONBOARDING_API_BASE_URL = new InjectionToken<string>('ONBOARDING_API_BASE_URL', {
+  providedIn: 'root',
+  factory: () => 'http://localhost:8000',
+});
+
 @Injectable({ providedIn: 'root' })
 export class OnboardingRunService {
-  private readonly runs = new Map<string, EmployeeOnboardingInput>();
+  private readonly pollIntervalMs = 2_000;
+  private readonly pollTimeoutMs = 180_000;
+
+  constructor(
+    private readonly http: HttpClient,
+    @Inject(ONBOARDING_API_BASE_URL) private readonly apiBaseUrl: string,
+  ) {}
 
   startRun(input: EmployeeOnboardingInput): Observable<StartRunResponse> {
-    const runId = `mock-run-${Date.now()}`;
-    this.runs.set(runId, input);
-
-    return of({
-      runId,
-      status: 'running' as const,
-    }).pipe(delay(400));
+    return this.http.post<StartRunResponse>(this.url('/api/onboarding/generate'), input);
   }
 
   getRunStatus(runId: string): Observable<RunStatusResponse> {
-    const input = this.runs.get(runId);
-
-    if (!input) {
-      return of({
-        runId,
-        status: 'error' as const,
-        message:
-          'Nao foi possivel gerar o plano de onboarding. Revise o formulario e tente novamente.',
-        errorMessage: 'Run mockado nao encontrado.',
-      }).pipe(delay(300));
-    }
-
-    if (input.specialAccessNotes?.toLowerCase().includes('mock-error')) {
-      return of({
-        runId,
-        status: 'error' as const,
-        message:
-          'Nao foi possivel gerar o plano de onboarding. Revise o formulario e tente novamente.',
-        errorMessage: 'Falha simulada do servico mockado.',
-      }).pipe(delay(700));
-    }
-
-    return of({
-      runId,
-      status: 'done' as const,
-      message: 'Plano de onboarding gerado para revisao.',
-      result: buildMockResult(input),
-    }).pipe(delay(900));
+    return this.http.get<RunStatusResponse>(this.url(`/api/onboarding/runs/${runId}`));
   }
-}
 
-function buildMockResult(input: EmployeeOnboardingInput): OnboardingPlanResult {
-  return {
-    employeeProfile: {
-      fullName: input.fullName,
-      role: input.role,
-      department: input.department,
-      directManager: input.directManager,
-      startDate: input.startDate,
-      workMode: input.workMode,
-    },
-    executiveSummary: `${input.fullName} precisa de um plano coordenado entre RH, gestor direto e TI para iniciar como ${input.role} em ${input.department}.`,
-    requiredDocuments: [
-      {
-        title: 'Contrato e dados cadastrais revisados',
-        ownerRole: 'RH',
-        status: 'pending',
-        rationale: 'Confirma dados basicos antes da data de inicio.',
-      },
-      {
-        title: 'Politicas internas e termo de confidencialidade',
-        ownerRole: 'RH',
-        status: 'recommended',
-        rationale: 'Entrega padrao para todos os novos colaboradores.',
-      },
-    ],
-    itChecklist: [
-      {
-        title: 'Notebook, e-mail corporativo e MFA',
-        ownerRole: 'TI',
-        status: 'pending',
-        rationale: input.equipmentNeeds || 'Necessario para acesso inicial seguro.',
-      },
-      {
-        title: `Acessos ao departamento ${input.department}`,
-        ownerRole: 'TI',
-        status: 'recommended',
-        rationale: input.specialAccessNotes || 'Validar com gestor direto antes de provisionar.',
-      },
-    ],
-    trainingPath: [
-      {
-        title: 'Boas-vindas institucionais',
-        ownerRole: 'RH',
-        status: 'recommended',
-        rationale: 'Contextualiza cultura, processos e canais de suporte.',
-      },
-      {
-        title: `Trilha inicial para ${input.role}`,
-        ownerRole: 'Gestor direto',
-        status: 'pending',
-        rationale: 'Ajustar conteudo conforme senioridade e escopo do cargo.',
-      },
-    ],
-    initialAgenda: [
-      {
-        title: 'Dia 1: recepcao, equipamentos e alinhamento com gestor',
-        ownerRole: 'RH',
-        status: 'recommended',
-      },
-      {
-        title: 'Semana 1: reunioes com pares e revisao de objetivos iniciais',
-        ownerRole: 'Gestor direto',
-        status: 'recommended',
-      },
-    ],
-    communications: [
-      {
-        audience: 'collaborator',
-        subject: `Boas-vindas ao time de ${input.department}`,
-        body: `Ola ${input.fullName}, preparamos um plano inicial para sua chegada. Revise as orientacoes com RH e ${input.directManager} no primeiro dia.`,
-        draft: true,
-      },
-      {
-        audience: 'manager',
-        subject: `Preparacao para chegada de ${input.fullName}`,
-        body: `Confirme agenda inicial, acessos necessarios e objetivos da primeira semana antes de ${input.startDate}.`,
-        draft: true,
-      },
-    ],
-    pendingActions: [
-      {
-        title: 'Validar acessos antes de qualquer provisionamento',
-        ownerRole: 'Gestor direto',
-        status: 'pending',
-      },
-      {
-        title: 'Revisar mensagens em rascunho antes de envio externo',
-        ownerRole: 'RH',
-        status: 'pending',
-      },
-    ],
-    riskFlags: [
-      {
-        title: 'Dependencia de confirmacao de acessos',
-        ownerRole: 'TI',
-        status: input.specialAccessNotes ? 'recommended' : 'pending',
-        rationale:
-          'O MVP nao provisiona sistemas; apenas sinaliza a necessidade de revisao humana.',
-      },
-    ],
-    status: 'ready_for_review',
-    nextRecommendedActions: [
-      'Revisar dados do colaborador e gestor direto.',
-      'Confirmar checklist de TI antes da data de inicio.',
-      'Aprovar ou ajustar comunicados em rascunho antes de qualquer envio.',
-    ],
-  };
+  pollRunStatus(runId: string): Observable<RunStatusResponse> {
+    return timer(0, this.pollIntervalMs).pipe(
+      switchMap(() => this.getRunStatus(runId)),
+      filter((response) => response.status !== 'running'),
+      take(1),
+      timeout({ first: this.pollTimeoutMs }),
+      catchError((error) => throwError(() => error)),
+    );
+  }
+
+  refineRun(runId: string, instruction: string, planVersion = 1): Observable<RefinePlanResponse> {
+    return this.http.post<RefinePlanResponse>(this.url(`/api/onboarding/runs/${runId}/refine`), {
+      instruction,
+      planVersion,
+    });
+  }
+
+  private url(path: string): string {
+    return `${this.apiBaseUrl.replace(/\/$/, '')}${path}`;
+  }
 }

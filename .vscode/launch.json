@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend: FastAPI",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/backend",
+      "command": "uv run uvicorn onboardflow.api.main:app --reload --app-dir src --host 0.0.0.0 --port 8000",
+      "preLaunchTask": "backend: migrate"
+    },
+    {
+      "name": "Frontend: Angular",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "command": "npm start"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full stack: Frontend + Backend",
+      "configurations": ["Backend: FastAPI", "Frontend: Angular"],
+      "stopAll": true
+    }
+  ]
+}

@@ -25,7 +25,19 @@ export interface RunStatusResponse {
   status: 'running' | 'done' | 'error';
   message: string;
   result?: OnboardingPlanResult;
+  validationResult?: ValidationResult;
+  agentActivity?: AgentAction[];
   errorMessage?: string;
+}
+
+export interface RefinePlanResponse {
+  runId: string;
+  status: 'done' | 'error';
+  revisionId: string;
+  revisionNumber: number;
+  result: OnboardingPlanResult;
+  markdown: string;
+  validationResult: ValidationResult;
 }
 
 export interface OnboardingPlanResult {
@@ -61,4 +73,33 @@ export interface CommunicationDraft {
   subject: string;
   body: string;
   draft: true;
+}
+
+export interface ValidationResult {
+  status: 'complete' | 'draft_usable' | 'unusable';
+  issues: ValidationIssue[];
+}
+
+export interface ValidationIssue {
+  field: string;
+  message: string;
+  severity: 'error' | 'warning';
+}
+
+export interface AgentAction {
+  actionId: string;
+  runId: string;
+  actorId: string;
+  actorName: string;
+  actionType: string;
+  taskId?: string | null;
+  agentName?: string | null;
+  status: string;
+  summary: string;
+  modelProvider?: string | null;
+  modelName?: string | null;
+  modelProfile?: string | null;
+  retryCount: number;
+  validationResult?: string | null;
+  createdAt: string;
 }

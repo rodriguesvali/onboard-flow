@@ -68,6 +68,8 @@ export class GeneratePlanPage {
   protected readonly reviewDecision = signal<ReviewDecision>('pending');
   protected readonly reviewFeedbackOpen = signal(false);
   protected readonly reviewFeedbackSubmitted = signal(false);
+  protected readonly refinementRunning = signal(false);
+  protected readonly refinementError = signal<string | null>(null);
   protected readonly reviewFeedback = new FormControl('', {
     nonNullable: true,
     validators: [Validators.required],
@@ -150,7 +152,10 @@ export class GeneratePlanPage {
       case 'running':
         return 'Gerando plano de onboarding...';
       case 'error':
-        return 'Nao foi possivel gerar o plano de onboarding. Revise o formulario e tente novamente.';
+        return (
+          'Nao foi possivel gerar o plano de onboarding. ' +
+          'Revise o formulario e tente novamente.'
+        );
       case 'idle':
       default:
         return 'Pronto para gerar um plano de onboarding.';
@@ -182,7 +187,7 @@ export class GeneratePlanPage {
           transitionGeneratePlan(current, { type: 'RUN_STARTED', runId }),
         );
 
-        this.onboardingRunService.getRunStatus(runId).subscribe({
+        this.onboardingRunService.pollRunStatus(runId).subscribe({
           next: (response) => {
             if (response.status === 'done' && response.result) {
               this.viewModel.update((current) =>
@@ -202,21 +207,21 @@ export class GeneratePlanPage {
               }),
             );
           },
-          error: () => {
+          error: (error: unknown) => {
             this.viewModel.update((current) =>
               transitionGeneratePlan(current, {
                 type: 'RUN_FAILED',
-                message: 'Falha inesperada ao consultar o status do run.',
+                message: apiErrorMessage(error, 'Falha inesperada ao consultar o status do run.'),
               }),
             );
           },
         });
       },
-      error: () => {
+      error: (error: unknown) => {
         this.viewModel.update((current) =>
           transitionGeneratePlan(current, {
             type: 'RUN_FAILED',
-            message: 'Falha inesperada ao iniciar o run.',
+            message: apiErrorMessage(error, 'Falha inesperada ao iniciar o run.'),
           }),
         );
       },
@@ -234,18 +239,45 @@ export class GeneratePlanPage {
     this.reviewDecision.set('pending');
     this.reviewFeedbackOpen.set(true);
     this.reviewFeedbackSubmitted.set(false);
+    this.refinementError.set(null);
   }
 
   protected submitChangeRequest(): void {
     this.reviewFeedbackSubmitted.set(true);
+    this.refinementError.set(null);
 
     if (this.reviewFeedback.invalid) {
       this.reviewFeedback.markAsTouched();
       return;
     }
 
-    this.reviewDecision.set('changes_requested');
-    this.reviewFeedbackOpen.set(false);
+    const runId = this.viewModel().runId;
+    if (!runId) {
+      this.reviewDecision.set('changes_requested');
+      this.reviewFeedbackOpen.set(false);
+      return;
+    }
+
+    this.refinementRunning.set(true);
+    this.onboardingRunService.refineRun(runId, this.reviewFeedback.value).subscribe({
+      next: (response) => {
+        this.viewModel.update((current) =>
+          transitionGeneratePlan(current, {
+            type: 'RUN_DONE',
+            result: response.result,
+          }),
+        );
+        this.reviewDecision.set('changes_requested');
+        this.reviewFeedbackOpen.set(false);
+        this.refinementRunning.set(false);
+      },
+      error: (error: unknown) => {
+        this.refinementRunning.set(false);
+        this.refinementError.set(
+          apiErrorMessage(error, 'Nao foi possivel solicitar ajustes no backend.'),
+        );
+      },
+    });
   }
 
   protected reset(): void {
@@ -358,6 +390,8 @@ export class GeneratePlanPage {
     this.reviewDecision.set('pending');
     this.reviewFeedbackOpen.set(false);
     this.reviewFeedbackSubmitted.set(false);
+    this.refinementRunning.set(false);
+    this.refinementError.set(null);
     this.reviewFeedback.reset('');
   }
 
@@ -384,4 +418,29 @@ function formatDate(value: Date | null): string {
   }
 
   return value.toISOString().slice(0, 10);
+}
+
+function apiErrorMessage(error: unknown, fallback: string): string {
+  if (isHttpErrorWithMessage(error)) {
+    if (typeof error.error?.detail === 'string') {
+      return error.error.detail;
+    }
+
+    if (typeof error.error?.errorMessage === 'string') {
+      return error.error.errorMessage;
+    }
+
+    if (typeof error.message === 'string' && error.message.length > 0) {
+      return error.message;
+    }
+  }
+
+  return fallback;
+}
+
+function isHttpErrorWithMessage(error: unknown): error is {
+  error?: { detail?: unknown; errorMessage?: unknown };
+  message?: unknown;
+} {
+  return typeof error === 'object' && error !== null;
 }

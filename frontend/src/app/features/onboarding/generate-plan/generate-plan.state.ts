@@ -40,7 +40,7 @@ export function transitionGeneratePlan(
       return current;
 
     case 'RUN_STARTED':
-      if (current.state === 'running') {
+      if (current.state === 'running' || current.state === 'done') {
         return {
           ...current,
           runId: event.runId,

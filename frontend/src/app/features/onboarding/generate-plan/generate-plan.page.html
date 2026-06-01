@@ -316,9 +316,14 @@
               label="Registrar solicitacao"
               icon="pi pi-send"
               severity="warn"
+              [loading]="refinementRunning()"
+              [disabled]="refinementRunning()"
               (onClick)="submitChangeRequest()"
             />
           </div>
+          @if (refinementError()) {
+            <p-message severity="error" [text]="refinementError() ?? ''" />
+          }
         </section>
       }
 

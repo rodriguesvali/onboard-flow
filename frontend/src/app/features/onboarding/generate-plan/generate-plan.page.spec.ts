@@ -7,12 +7,13 @@ import { OnboardingRunService } from './onboarding-run.service';
 describe('GeneratePlanPage', () => {
   const onboardingRunService = {
     startRun: vi.fn(),
-    getRunStatus: vi.fn(),
+    pollRunStatus: vi.fn(),
+    refineRun: vi.fn(),
   };
 
   beforeEach(async () => {
     onboardingRunService.startRun.mockReturnValue(of({ runId: 'mock-run-1', status: 'running' }));
-    onboardingRunService.getRunStatus.mockReturnValue(
+    onboardingRunService.pollRunStatus.mockReturnValue(
       of({
         runId: 'mock-run-1',
         status: 'done',
@@ -39,6 +40,43 @@ describe('GeneratePlanPage', () => {
         },
       }),
     );
+    onboardingRunService.refineRun.mockReturnValue(
+      of({
+        runId: 'mock-run-1',
+        status: 'done',
+        revisionId: 'rev-1',
+        revisionNumber: 2,
+        result: {
+          employeeProfile: {
+            fullName: 'Ana Silva',
+            role: 'Engenheira de Software',
+            department: 'Engenharia',
+            directManager: 'Joaquim',
+            startDate: '2026-06-15',
+            workMode: 'Remoto',
+          },
+          executiveSummary: 'Resumo refinado.',
+          requiredDocuments: [],
+          itChecklist: [],
+          trainingPath: [],
+          initialAgenda: [],
+          communications: [],
+          pendingActions: [
+            {
+              title: 'Ajuste solicitado pelo RH',
+              ownerRole: 'RH',
+              status: 'pending',
+              rationale: 'Revisar prazos da agenda inicial.',
+            },
+          ],
+          riskFlags: [],
+          status: 'draft',
+          nextRecommendedActions: [],
+        },
+        markdown: '',
+        validationResult: { status: 'complete', issues: [] },
+      }),
+    );
 
     await TestBed.configureTestingModule({
       imports: [GeneratePlanPage],
@@ -48,7 +86,8 @@ describe('GeneratePlanPage', () => {
 
   afterEach(() => {
     onboardingRunService.startRun.mockClear();
-    onboardingRunService.getRunStatus.mockClear();
+    onboardingRunService.pollRunStatus.mockClear();
+    onboardingRunService.refineRun.mockClear();
     localStorage.removeItem('onboardflow-theme');
     document.documentElement.classList.remove('app-dark');
     delete document.documentElement.dataset['theme'];
@@ -131,7 +170,7 @@ describe('GeneratePlanPage', () => {
     fixture.detectChanges();
 
     expect(onboardingRunService.startRun).toHaveBeenCalledOnce();
-    expect(onboardingRunService.getRunStatus).toHaveBeenCalledWith('mock-run-1');
+    expect(onboardingRunService.pollRunStatus).toHaveBeenCalledWith('mock-run-1');
     expect(fixture.nativeElement.textContent).toContain(
       'Plano de onboarding gerado para revisao humana.',
     );
@@ -234,7 +273,13 @@ describe('GeneratePlanPage', () => {
     component.reviewFeedback.setValue('Revisar prazos da agenda inicial.');
     submitButton.click();
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
 
+    expect(onboardingRunService.refineRun).toHaveBeenCalledWith(
+      'mock-run-1',
+      'Revisar prazos da agenda inicial.',
+    );
     expect(fixture.nativeElement.textContent).toContain(
       'Solicitacao de ajustes registrada nesta sessao de revisao.',
     );
