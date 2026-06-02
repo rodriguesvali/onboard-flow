@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     crewai_verbose: bool = False
     crewai_amp_tracing_enabled: bool = Field(
         default=False,
-        validation_alias=AliasChoices("ONBOARDFLOW_CREWAI_AMP_TRACING", "CREWAI_TRACING_ENABLED"),
+        validation_alias="CREWAI_AMP_TRACING",
     )
     crewai_temperature: float = 0.2
     llm_provider: str = "google-gemini"

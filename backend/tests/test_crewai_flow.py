@@ -112,7 +112,7 @@ def test_live_crewai_flow_executes_crew_and_normalizes_plan(monkeypatch, employe
     FakeCrew.instances.clear()
     flow = LiveCrewAIOnboardingFlow(
         JsonCatalogAdapter(),
-        Settings(onboarding_flow_mode="crewai", crewai_amp_tracing_enabled=True),
+        Settings(onboarding_flow_mode="crewai", CREWAI_AMP_TRACING=True),
     )
     monkeypatch.setattr(
         flow,
@@ -148,7 +148,7 @@ def test_live_crewai_flow_refines_plan_with_structured_output(monkeypatch, emplo
     FakeCrew.instances.clear()
     flow = LiveCrewAIOnboardingFlow(
         JsonCatalogAdapter(),
-        Settings(onboarding_flow_mode="crewai"),
+        Settings(onboarding_flow_mode="crewai", CREWAI_AMP_TRACING=False),
     )
     monkeypatch.setattr(
         flow,

@@ -226,7 +226,7 @@ Documentation/tooling checked before implementation:
 
 Included:
 
-- Added backend setting `crewai_amp_tracing_enabled`, exposed through `ONBOARDFLOW_CREWAI_AMP_TRACING` and compatible with `CREWAI_TRACING_ENABLED`.
+- Added backend setting `crewai_amp_tracing_enabled`, exposed through `CREWAI_AMP_TRACING`.
 - Default remains `false` so deterministic tests, provider-free demos, and local development do not publish traces accidentally.
 - Passed `tracing=<configured flag>` to both live CrewAI generation and live CrewAI refinement `Crew` instances.
 - Startup log now prints `onboardflow_backend_started flow_mode=<mode> crewai_amp_tracing=<true|false>`.
@@ -237,7 +237,7 @@ Runtime configuration:
 
 ```text
 ONBOARDFLOW_FLOW_MODE=crewai
-ONBOARDFLOW_CREWAI_AMP_TRACING=true
+CREWAI_AMP_TRACING=true
 GEMINI_API_KEY=<required for live Gemini calls>
 ```
 
@@ -265,3 +265,9 @@ Results:
 - Backend tests passed: 3 files, 12 tests.
 - Compileall passed for `src` and `tests`.
 - Existing warning remains from Starlette/FastAPI TestClient requesting future `httpx2`; unrelated to AMP tracing.
+
+Follow-up rename on 2026-06-02:
+
+- Renamed the backend AMP tracing environment variable from `ONBOARDFLOW_CREWAI_AMP_TRACING` to `CREWAI_AMP_TRACING`.
+- Removed backend dependence on `CREWAI_TRACING_ENABLED` as an application setting; that native CrewAI variable may still be used by CrewAI tooling, but OnboardFlow controls the explicit `Crew(tracing=...)` flag through `CREWAI_AMP_TRACING`.
+- Validation evidence after rename: `uv run pytest` passed with 3 files and 14 tests; `uv run python -m compileall src tests` passed.

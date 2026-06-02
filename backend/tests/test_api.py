@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 def test_app_startup_logs_configured_flow_mode(monkeypatch, caplog):
     monkeypatch.setenv("ONBOARDFLOW_FLOW_MODE", "deterministic")
+    monkeypatch.setenv("CREWAI_AMP_TRACING", "false")
 
     from onboardflow.config.settings import get_settings
 
@@ -20,6 +21,34 @@ def test_app_startup_logs_configured_flow_mode(monkeypatch, caplog):
         "onboardflow_backend_started flow_mode=deterministic "
         "crewai_amp_tracing=False"
     ) in messages
+
+
+def test_app_startup_logs_crewai_amp_tracing_when_enabled(monkeypatch, caplog):
+    monkeypatch.setenv("ONBOARDFLOW_FLOW_MODE", "crewai")
+    monkeypatch.setenv("CREWAI_AMP_TRACING", "true")
+
+    from onboardflow.config.settings import get_settings
+
+    get_settings.cache_clear()
+    from onboardflow.api.main import create_app
+
+    caplog.set_level(logging.INFO)
+    with TestClient(create_app()) as client:
+        assert client.get("/health").status_code == 200
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert "onboardflow_backend_started flow_mode=crewai crewai_amp_tracing=True" in messages
+
+
+def test_crewai_tracing_enabled_does_not_control_backend_amp_flag(monkeypatch):
+    monkeypatch.setenv("CREWAI_AMP_TRACING", "false")
+    monkeypatch.setenv("CREWAI_TRACING_ENABLED", "true")
+
+    from onboardflow.config.settings import Settings
+
+    settings = Settings()
+
+    assert settings.crewai_amp_tracing_enabled is False
 
 
 def test_generate_and_get_run_returns_frontend_compatible_plan(client, employee_payload):
