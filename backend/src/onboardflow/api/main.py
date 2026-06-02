@@ -24,8 +24,9 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         logger.info(
-            "onboardflow_backend_started flow_mode=%s",
+            "onboardflow_backend_started flow_mode=%s crewai_amp_tracing=%s",
             settings.onboarding_flow_mode,
+            settings.crewai_amp_tracing_enabled,
         )
         yield
 

@@ -162,6 +162,16 @@ Post-QA visual refinement approved by Agentic Architect:
 - Validation after refinement: `npm test -- --watch=false` passed with 4 files and 15 tests; `npm run build` passed without budget warnings; `npx prettier --check .` passed; `uv run pytest` passed with 3 files and 12 tests; `uv run python -m compileall src tests` passed.
 - Agentic Architect approved the executive summary Markdown Accordion refinement.
 
+Post-QA CrewAI AMP observability refinement pending Agentic Architect review:
+
+- Agentic Architect requested continuing Build to implement observability using CrewAI AMP.
+- Backend now exposes opt-in AMP tracing through `ONBOARDFLOW_CREWAI_AMP_TRACING=true`, while keeping tracing disabled by default for local deterministic runs.
+- Live CrewAI generation and refinement pass the configured value to the CrewAI `Crew(tracing=...)` flag.
+- Startup logs now include both `flow_mode` and `crewai_amp_tracing`.
+- Backend README documents `uv run crewai login`, `uv run crewai traces enable`, and `uv run crewai traces status` as the local AMP activation checks.
+- Startup alone does not publish a trace; a live CrewAI generate/refine execution is required.
+- Validation after refinement: `uv run pytest` passed with 3 files and 12 tests; `uv run python -m compileall src tests` passed.
+
 ## 6. Limitations And Follow-up QA
 
 Recommended follow-up before broader demo or delivery:
@@ -172,6 +182,7 @@ Recommended follow-up before broader demo or delivery:
 - Run one live CrewAI/Gemini smoke only when provider credentials and spend are intentionally approved.
 - Add accessibility checks for the PrimeNG form and results view.
 - Add contract tests that compare frontend TypeScript models against backend OpenAPI schema once API schema export is added.
+- Run a live CrewAI AMP smoke only when AMP login, provider credentials, and trace publication are intentionally approved.
 
 ## 7. Review Notes
 

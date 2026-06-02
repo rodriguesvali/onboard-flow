@@ -591,6 +591,7 @@ class LiveCrewAIOnboardingFlow:
             agents=list(agents.values()),
             tasks=list(tasks.values()),
             process=crewai["Process"].sequential,
+            tracing=self.settings.crewai_amp_tracing_enabled,
             verbose=self.settings.crewai_verbose,
         )
         run_token = _crewai_run_id.set(run.run_id)
@@ -614,6 +615,7 @@ class LiveCrewAIOnboardingFlow:
             agents=[agents["refinement_agent"]],
             tasks=[task],
             process=crewai["Process"].sequential,
+            tracing=self.settings.crewai_amp_tracing_enabled,
             verbose=self.settings.crewai_verbose,
         )
         run_token = _crewai_run_id.set(run.run_id)

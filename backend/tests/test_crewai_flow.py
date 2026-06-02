@@ -37,8 +37,12 @@ class FakeTask:
 
 
 class FakeCrew:
+    instances = []
+
     def __init__(self, **kwargs):
+        self.kwargs = kwargs
         self.tasks = kwargs["tasks"]
+        self.instances.append(self)
 
     def kickoff(self, inputs):
         if "current_plan_json" in inputs:
@@ -105,9 +109,10 @@ def _specialist_output(task_id: str) -> SpecialistOutput:
 
 def test_live_crewai_flow_executes_crew_and_normalizes_plan(monkeypatch, employee_payload):
     employee = EmployeeOnboardingInput.model_validate(employee_payload)
+    FakeCrew.instances.clear()
     flow = LiveCrewAIOnboardingFlow(
         JsonCatalogAdapter(),
-        Settings(onboarding_flow_mode="crewai"),
+        Settings(onboarding_flow_mode="crewai", crewai_amp_tracing_enabled=True),
     )
     monkeypatch.setattr(
         flow,
@@ -128,6 +133,7 @@ def test_live_crewai_flow_executes_crew_and_normalizes_plan(monkeypatch, employe
     )
 
     assert len(outputs) == 5
+    assert FakeCrew.instances[-1].kwargs["tracing"] is True
     assert outputs[0].input_sources == ["employee_input", "local_catalogs", "crewai"]
     assert plan.required_documents[0].title == "Documento de identificacao"
     assert "generate_document_checklist completed" not in plan.executive_summary
@@ -139,6 +145,7 @@ def test_live_crewai_flow_executes_crew_and_normalizes_plan(monkeypatch, employe
 
 def test_live_crewai_flow_refines_plan_with_structured_output(monkeypatch, employee_payload):
     employee = EmployeeOnboardingInput.model_validate(employee_payload)
+    FakeCrew.instances.clear()
     flow = LiveCrewAIOnboardingFlow(
         JsonCatalogAdapter(),
         Settings(onboarding_flow_mode="crewai"),
@@ -167,6 +174,7 @@ def test_live_crewai_flow_refines_plan_with_structured_output(monkeypatch, emplo
     )
 
     assert output.status == "done"
+    assert FakeCrew.instances[-1].kwargs["tracing"] is False
     assert output.task_id == "refine_plan_revision"
     assert "Refined summary from fake CrewAI" not in refined.executive_summary
     assert "Ajustes solicitados pelo RH foram incorporados" in refined.executive_summary

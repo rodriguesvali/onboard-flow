@@ -210,3 +210,58 @@ Results:
 - Short Uvicorn startup smoke on port 8010 printed `onboardflow_backend_started flow_mode=crewai`.
 - Existing warning remains from Starlette/FastAPI TestClient requesting future `httpx2`; unrelated to instrumentation.
 - Agentic Architect approved the backend log instrumentation refinement.
+
+## 9. Post-QA CrewAI AMP Observability
+
+Date: 2026-06-01
+Status: Pending Agentic Architect review
+
+Implemented after Agentic Architect direction to continue the Build phase and add observability through CrewAI AMP.
+
+Documentation/tooling checked before implementation:
+
+- Context7 CrewAI documentation for built-in tracing and CrewAI AMP setup.
+- Current CrewAI documentation states that AMP tracing can be enabled with `tracing=True` on a `Crew` instance, and that this code flag has higher priority than environment variables or local user preferences.
+- Current CrewAI CLI exposes trace collection management through `crewai traces enable` and `crewai traces status`, in addition to `crewai login`.
+
+Included:
+
+- Added backend setting `crewai_amp_tracing_enabled`, exposed through `ONBOARDFLOW_CREWAI_AMP_TRACING` and compatible with `CREWAI_TRACING_ENABLED`.
+- Default remains `false` so deterministic tests, provider-free demos, and local development do not publish traces accidentally.
+- Passed `tracing=<configured flag>` to both live CrewAI generation and live CrewAI refinement `Crew` instances.
+- Startup log now prints `onboardflow_backend_started flow_mode=<mode> crewai_amp_tracing=<true|false>`.
+- Updated backend README with the AMP login, trace-collection enable/status, and runtime commands.
+- Added tests proving CrewAI generation receives `tracing=True` when explicitly enabled and refinement receives `tracing=False` by default.
+
+Runtime configuration:
+
+```text
+ONBOARDFLOW_FLOW_MODE=crewai
+ONBOARDFLOW_CREWAI_AMP_TRACING=true
+GEMINI_API_KEY=<required for live Gemini calls>
+```
+
+Operational prerequisite:
+
+```text
+uv run crewai login
+uv run crewai traces enable
+uv run crewai traces status
+```
+
+Runtime note:
+
+- Backend startup only confirms configuration. A trace is published after a real live CrewAI generation or refinement executes `Crew.kickoff()`.
+
+Validation evidence:
+
+```text
+uv run pytest
+uv run python -m compileall src tests
+```
+
+Results:
+
+- Backend tests passed: 3 files, 12 tests.
+- Compileall passed for `src` and `tests`.
+- Existing warning remains from Starlette/FastAPI TestClient requesting future `httpx2`; unrelated to AMP tracing.

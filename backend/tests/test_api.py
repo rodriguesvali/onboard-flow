@@ -16,7 +16,10 @@ def test_app_startup_logs_configured_flow_mode(monkeypatch, caplog):
         assert client.get("/health").status_code == 200
 
     messages = "\n".join(record.getMessage() for record in caplog.records)
-    assert "onboardflow_backend_started flow_mode=deterministic" in messages
+    assert (
+        "onboardflow_backend_started flow_mode=deterministic "
+        "crewai_amp_tracing=False"
+    ) in messages
 
 
 def test_generate_and_get_run_returns_frontend_compatible_plan(client, employee_payload):

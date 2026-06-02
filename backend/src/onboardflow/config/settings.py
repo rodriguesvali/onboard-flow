@@ -6,7 +6,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,
+    )
 
     database_url: str = "sqlite:///./onboardflow.db"
     api_cors_origins: str = "http://localhost:4200,http://127.0.0.1:4200"
@@ -17,6 +22,10 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("ONBOARDING_FLOW_MODE", "ONBOARDFLOW_FLOW_MODE"),
     )
     crewai_verbose: bool = False
+    crewai_amp_tracing_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("ONBOARDFLOW_CREWAI_AMP_TRACING", "CREWAI_TRACING_ENABLED"),
+    )
     crewai_temperature: float = 0.2
     llm_provider: str = "google-gemini"
     llm_model: str = "gemini-3.5-flash"

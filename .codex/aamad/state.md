@@ -44,7 +44,7 @@ Approved role refinements:
 - `.codex/aamad/agents/backend-eng.md`
 - `.codex/aamad/agents/integration-eng.md`
 
-Backend base implementation, CrewAI live execution update, integration implementation, QA validation, and post-QA refinements are approved. Deliver planning has not started.
+Backend base implementation, CrewAI live execution update, integration implementation, QA validation, and prior post-QA refinements are approved. CrewAI AMP observability is implemented and pending Agentic Architect review. Deliver planning has not started.
 
 ## Review Gate
 
@@ -71,3 +71,5 @@ Current post-QA backend instrumentation refinement review gate is approved as re
 Current post-QA frontend review-feedback cleanup refinement review gate is approved as recorded in `.codex/aamad/review-log.md`.
 
 Current post-QA executive summary Markdown Accordion refinement review gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current post-QA CrewAI AMP observability refinement review gate is pending Agentic Architect review.
