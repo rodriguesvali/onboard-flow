@@ -49,7 +49,7 @@ Backend base implementation, CrewAI live execution update, integration implement
 
 A new business request for simulated task dispatch reopened Define scope as an addendum before Delivery. The addendum `project-context/1.define/task-dispatch-simulation-addendum.md` is approved. Simulated task dispatch implementation is approved.
 
-The project-specific DevOps persona `.codex/aamad/agents/devops-eng.md` is approved. The first Delivery planning artifact `project-context/3.deliver/delivery-plan.md` has been generated and is pending Agentic Architect review.
+The project-specific DevOps persona `.codex/aamad/agents/devops-eng.md` is approved. The Delivery plan, local operations runbook, backend environment example Delivery correction, CI plan, default CI workflow, and observability readiness artifact are approved.
 
 ## Review Gate
 
@@ -87,4 +87,14 @@ Current simulated task dispatch Build refinement review gate is approved as reco
 
 Current DevOps persona refinement review gate is approved as recorded in `.codex/aamad/review-log.md`.
 
-Current Delivery planning artifact review gate is pending Agentic Architect review.
+Current Delivery planning artifact review gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current Local Operations runbook review gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current backend environment example Delivery correction review gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current CI Plan review gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current Default CI Workflow review gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current Observability Readiness review gate is approved as recorded in `.codex/aamad/review-log.md`.
