@@ -35,6 +35,7 @@ class SqlAlchemyRunRepository:
                 "markdown": record.markdown,
                 "errorMessage": record.error_message,
                 "actionHistory": record.action_history,
+                "dispatchReceipts": record.dispatch_receipts,
                 "revisionNumber": record.revision_number,
                 "createdAt": record.created_at,
                 "updatedAt": record.updated_at,
@@ -53,8 +54,8 @@ class SqlAlchemyRunRepository:
             "markdown": data.get("markdown"),
             "error_message": data.get("errorMessage"),
             "action_history": data["actionHistory"],
+            "dispatch_receipts": data["dispatchReceipts"],
             "revision_number": data["revisionNumber"],
             "created_at": run.created_at,
             "updated_at": run.updated_at,
         }
-

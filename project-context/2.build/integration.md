@@ -122,3 +122,36 @@ Review focus:
 - Confirm that backend refinement is the correct behavior for `Solicitar ajustes`.
 - Confirm that session-local approval remains acceptable until a later backend-persisted approval gate.
 - Confirm whether the next step is QA validation or any integration hardening.
+
+## 8. Simulated Task Dispatch Integration Refinement
+
+Date: 2026-06-07
+Status: Pending Agentic Architect review
+
+Implemented after the approved Define addendum `project-context/1.define/task-dispatch-simulation-addendum.md`.
+
+Contract changes:
+
+- Added backend route `POST /api/onboarding/runs/{runId}/dispatch`.
+- Added frontend service method `dispatchRun(runId)`.
+- Added frontend models for dispatch summary and receipts.
+- `GET /api/onboarding/runs/{runId}` now returns persisted `dispatchReceipts`.
+- `Aprovar e simular envios` is backend-backed and no longer session-local.
+
+Validation evidence:
+
+```text
+cd backend && uv run pytest
+cd backend && uv run python -m compileall src tests
+cd backend && uv run alembic upgrade head
+cd frontend && npm test -- --watch=false
+cd frontend && npm run build
+cd frontend && npx prettier --check .
+```
+
+Results:
+
+- Backend tests passed: 3 files, 17 tests.
+- Frontend tests passed: 4 files, 16 tests.
+- Backend compileall, Alembic upgrade, Angular build, and Prettier check passed.
+- Deterministic API smoke confirmed dispatch persistence and AI tools routing with 26 simulated receipts.

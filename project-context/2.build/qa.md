@@ -162,7 +162,7 @@ Post-QA visual refinement approved by Agentic Architect:
 - Validation after refinement: `npm test -- --watch=false` passed with 4 files and 15 tests; `npm run build` passed without budget warnings; `npx prettier --check .` passed; `uv run pytest` passed with 3 files and 12 tests; `uv run python -m compileall src tests` passed.
 - Agentic Architect approved the executive summary Markdown Accordion refinement.
 
-Post-QA CrewAI AMP observability refinement pending Agentic Architect review:
+Post-QA CrewAI AMP observability refinement approved by Agentic Architect:
 
 - Agentic Architect requested continuing Build to implement observability using CrewAI AMP.
 - Backend now exposes opt-in AMP tracing through `CREWAI_AMP_TRACING=true`, while keeping tracing disabled by default for local deterministic runs.
@@ -172,6 +172,20 @@ Post-QA CrewAI AMP observability refinement pending Agentic Architect review:
 - Startup alone does not publish a trace; a live CrewAI generate/refine execution is required.
 - Validation after refinement: `uv run pytest` passed with 3 files and 12 tests; `uv run python -m compileall src tests` passed.
 - Follow-up rename: the app-specific AMP flag is now `CREWAI_AMP_TRACING`; validation after rename passed with `uv run pytest` across 14 backend tests and `uv run python -m compileall src tests`.
+- Agentic Architect approved CrewAI AMP as concluded on 2026-06-07.
+
+Post-QA simulated task dispatch refinement pending Agentic Architect review:
+
+- Agentic Architect approved a Define addendum requiring the flow to close with simulated task dispatch before Delivery.
+- Backend now exposes `POST /api/onboarding/runs/{runId}/dispatch`.
+- Dispatch derives receipts from all actionable plan sections and routes each task through either `SimulatedEmailDispatchTool` or `SimulatedServiceDeskDispatchTool`.
+- Receipts are persisted in `dispatchReceipts` and exposed through run status.
+- Re-dispatch for the same revision is idempotent and returns `already_sent_simulated` without duplicating persisted receipts.
+- Frontend approval now uses `Aprovar e simular envios`, calls the backend dispatch endpoint, and displays receipt counts and compact receipt details.
+- AI tools fit was validated in the demo catalogs: `Ferramentas de IA aprovadas` routes to service desk, and `Uso responsavel de IA` routes to email.
+- Validation after refinement: `uv run pytest` passed with 17 backend tests; `uv run python -m compileall src tests` passed; `uv run alembic upgrade head` passed; `npm test -- --watch=false` passed with 16 frontend tests; `npm run build` passed without budget warnings; `npx prettier --check .` passed.
+- Deterministic API smoke generated run `run_6c2e85f468484302`, returned 26 receipts, persisted 26 receipts, and confirmed AI tools routing.
+- Follow-up copy adjustment: visible receipt status now shows `Enviado` instead of `Simulado`; validation passed with focused frontend page tests and backend API tests.
 
 ## 6. Limitations And Follow-up QA
 
@@ -184,6 +198,7 @@ Recommended follow-up before broader demo or delivery:
 - Add accessibility checks for the PrimeNG form and results view.
 - Add contract tests that compare frontend TypeScript models against backend OpenAPI schema once API schema export is added.
 - Run a live CrewAI AMP smoke only when AMP login, provider credentials, and trace publication are intentionally approved.
+- Add Playwright coverage for `Aprovar e simular envios` if browser-level dispatch confirmation is required before Delivery.
 
 ## 7. Review Notes
 

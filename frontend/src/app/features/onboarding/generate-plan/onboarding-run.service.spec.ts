@@ -114,4 +114,34 @@ describe('OnboardingRunService', () => {
 
     expect(revisionNumber).toBe(2);
   });
+
+  it('dispatches a backend run through the simulated dispatch endpoint', () => {
+    let total = 0;
+
+    service.dispatchRun('run_1').subscribe((response) => {
+      total = response.dispatchSummary.total;
+    });
+
+    const request = http.expectOne('http://api.test/api/onboarding/runs/run_1/dispatch');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({});
+    request.flush({
+      runId: 'run_1',
+      revisionNumber: 1,
+      status: 'done',
+      simulated: true,
+      dispatchSummary: {
+        total: 2,
+        email: 1,
+        serviceDesk: 1,
+        sentSimulated: 2,
+        alreadySentSimulated: 0,
+        failedSimulated: 0,
+      },
+      receipts: [],
+      agentActivity: [],
+    });
+
+    expect(total).toBe(2);
+  });
 });

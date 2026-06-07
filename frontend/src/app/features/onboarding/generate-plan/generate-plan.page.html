@@ -266,10 +266,11 @@
           <p-tag severity="success" [value]="planStatusLabel(plan.status)" />
           <p-button
             type="button"
-            label="Aprovar plano"
-            icon="pi pi-check"
+            label="Aprovar e simular envios"
+            icon="pi pi-send"
             severity="success"
-            [disabled]="reviewDecision() === 'approved'"
+            [loading]="dispatchRunning()"
+            [disabled]="reviewDecision() === 'approved' || dispatchRunning()"
             (onClick)="approvePlan()"
           />
           <p-button
@@ -290,6 +291,10 @@
           />
         </div>
       </div>
+
+      @if (dispatchError()) {
+        <p-message severity="error" [text]="dispatchError() ?? ''" />
+      }
 
       @if (reviewFeedbackOpen()) {
         <section class="review-panel" aria-labelledby="review-feedback-heading">
@@ -329,16 +334,56 @@
 
       @if (reviewDecision() === 'approved') {
         <section class="review-decision" aria-label="Decisao de revisao">
-          <h3>Plano aprovado</h3>
+          <h3>Plano aprovado e envios simulados</h3>
           <p>
-            Decisao registrada nesta sessao. Comunicados, acessos e provisionamentos continuam sem
-            envio automatico.
+            Decisao registrada no backend. Os recibos abaixo sao simulados; nenhum e-mail, ticket ou
+            provisionamento real foi executado.
           </p>
         </section>
       } @else if (reviewDecision() === 'changes_requested') {
         <section class="review-decision" aria-label="Decisao de revisao">
           <h3>Ajustes solicitados</h3>
           <p>{{ reviewFeedback.value }}</p>
+        </section>
+      }
+
+      @if (dispatchSummary(); as summary) {
+        <section class="review-panel" aria-labelledby="dispatch-heading">
+          <div class="section-heading">
+            <h3 id="dispatch-heading">Recibos de envio simulado</h3>
+            <span>
+              {{ summary.total }} tarefas encaminhadas · {{ summary.email }} por email ·
+              {{ summary.serviceDesk }} por service desk
+            </span>
+          </div>
+          <div class="result-grid">
+            @for (receipt of dispatchReceipts(); track receipt.receiptId) {
+              <p-card>
+                <div class="card-heading-row">
+                  <strong>{{ receipt.taskTitle }}</strong>
+                  <p-tag
+                    [severity]="dispatchStatusSeverity(receipt.status)"
+                    [value]="dispatchStatusLabel(receipt.status)"
+                  />
+                </div>
+                <dl>
+                  <div>
+                    <dt>Canal</dt>
+                    <dd>{{ dispatchChannelLabel(receipt.channel) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Tool</dt>
+                    <dd>{{ receipt.toolName }}</dd>
+                  </div>
+                  <div>
+                    <dt>Destino</dt>
+                    <dd>{{ receipt.destination }}</dd>
+                  </div>
+                </dl>
+                <p>{{ receipt.payloadPreview }}</p>
+              </p-card>
+            }
+          </div>
         </section>
       }
 

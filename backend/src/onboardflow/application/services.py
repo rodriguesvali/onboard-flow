@@ -9,6 +9,12 @@ from onboardflow.application.ports import (
 from onboardflow.config.settings import Settings
 from onboardflow.domain.models import (
     AgentAction,
+    CommunicationDraft,
+    DispatchChannel,
+    DispatchReceipt,
+    DispatchRunResponse,
+    DispatchStatus,
+    DispatchSummary,
     EmployeeOnboardingInput,
     ItemStatus,
     OnboardingPlanResult,
@@ -199,7 +205,66 @@ class OnboardingApplicationService:
             markdown=run.markdown,
             validationResult=run.validation_result,
             agentActivity=run.action_history,
+            dispatchReceipts=run.dispatch_receipts,
             errorMessage=run.error_message,
+        )
+
+    def dispatch(self, run_id: str) -> DispatchRunResponse | None:
+        run = self.repository.get(run_id)
+        if run is None or run.result is None:
+            return None
+
+        existing_keys = {
+            self._dispatch_key(receipt.revision_number, receipt.source_section, receipt.task_title)
+            for receipt in run.dispatch_receipts
+        }
+        receipts: list[DispatchReceipt] = []
+        already_sent = 0
+
+        logger.info("onboarding_dispatch_started run_id=%s revision=%s", run.run_id, run.revision_number)
+        for receipt in self._derive_dispatch_receipts(run, run.result):
+            key = self._dispatch_key(receipt.revision_number, receipt.source_section, receipt.task_title)
+            if key in existing_keys:
+                already_sent += 1
+                receipts.append(
+                    receipt.model_copy(update={"status": DispatchStatus.ALREADY_SENT_SIMULATED})
+                )
+                continue
+
+            run.dispatch_receipts.append(receipt)
+            receipts.append(receipt)
+            existing_keys.add(key)
+
+        run.action_history.append(
+            self._action(
+                run.run_id,
+                "dispatch_simulated",
+                (
+                    f"Envio simulado concluido: {len(receipts) - already_sent} novos recibos, "
+                    f"{already_sent} ja existentes."
+                ),
+                task_id="dispatch_onboarding_tasks",
+                agent_name="Dispatch Router",
+                validation_result="sent_simulated",
+            )
+        )
+        run.message = "Plano aprovado e envios simulados registrados."
+        run.updated_at = utc_now()
+        self.repository.save(run)
+        logger.info(
+            "onboarding_dispatch_completed run_id=%s receipts=%s already_sent=%s",
+            run.run_id,
+            len(receipts),
+            already_sent,
+        )
+
+        return DispatchRunResponse(
+            runId=run.run_id,
+            revisionNumber=run.revision_number,
+            status=run.status,
+            dispatchSummary=self._dispatch_summary(receipts),
+            receipts=receipts,
+            agentActivity=run.action_history,
         )
 
     def refine(self, run_id: str, request: RefinePlanRequest) -> RefinePlanResponse | None:
@@ -292,6 +357,141 @@ class OnboardingApplicationService:
         ]
         data["status"] = PlanStatus.DRAFT
         return OnboardingPlanResult.model_validate(data)
+
+    def _derive_dispatch_receipts(
+        self, run: OnboardingRun, plan: OnboardingPlanResult
+    ) -> list[DispatchReceipt]:
+        receipts: list[DispatchReceipt] = []
+
+        for draft in plan.communications:
+            receipts.append(self._receipt_for_communication(run, plan, draft))
+
+        for item in plan.required_documents:
+            receipts.append(self._email_receipt(run, "requiredDocuments", item.title, item.owner_role, "RH"))
+        for item in plan.it_checklist:
+            receipts.append(self._service_desk_receipt(run, "itChecklist", item.title, item.owner_role))
+        for item in plan.training_path:
+            receipts.append(
+                self._receipt_for_item(run, "trainingPath", item.title, item.owner_role, default_email="Colaborador")
+            )
+        for item in plan.initial_agenda:
+            receipts.append(self._email_receipt(run, "initialAgenda", item.title, item.owner_role, "Gestor"))
+        for item in plan.pending_actions:
+            receipts.append(
+                self._receipt_for_item(run, "pendingActions", item.title, item.owner_role, default_email="RH")
+            )
+        for item in plan.risk_flags:
+            receipts.append(self._email_receipt(run, "riskFlags", item.title, item.owner_role, "RH"))
+        for action in plan.next_recommended_actions:
+            receipts.append(self._email_receipt(run, "nextRecommendedActions", action, "RH", "RH"))
+
+        return receipts
+
+    def _receipt_for_communication(
+        self, run: OnboardingRun, plan: OnboardingPlanResult, draft: CommunicationDraft
+    ) -> DispatchReceipt:
+        if draft.audience == "it":
+            return self._service_desk_receipt(
+                run,
+                "communications",
+                draft.subject,
+                "TI",
+                preview=draft.body,
+            )
+        recipient = {
+            "collaborator": plan.employee_profile.full_name,
+            "manager": plan.employee_profile.direct_manager,
+            "hr": self.actor.actor_name,
+        }.get(draft.audience, self.actor.actor_name)
+        return self._email_receipt(
+            run,
+            "communications",
+            draft.subject,
+            draft.audience.upper(),
+            recipient,
+            preview=draft.body,
+        )
+
+    def _receipt_for_item(
+        self,
+        run: OnboardingRun,
+        source_section: str,
+        title: str,
+        owner_role: str,
+        default_email: str,
+    ) -> DispatchReceipt:
+        if owner_role.strip().lower() in {"ti", "it"}:
+            return self._service_desk_receipt(run, source_section, title, owner_role)
+        return self._email_receipt(run, source_section, title, owner_role, default_email)
+
+    def _email_receipt(
+        self,
+        run: OnboardingRun,
+        source_section: str,
+        title: str,
+        owner_role: str,
+        recipient: str,
+        preview: str | None = None,
+    ) -> DispatchReceipt:
+        return DispatchReceipt(
+            runId=run.run_id,
+            revisionNumber=run.revision_number,
+            sourceSection=source_section,
+            taskTitle=title,
+            ownerRole=owner_role,
+            channel=DispatchChannel.EMAIL,
+            toolName="SimulatedEmailDispatchTool",
+            recipient=recipient,
+            destination=f"email::{recipient}",
+            status=DispatchStatus.SENT_SIMULATED,
+            payloadPreview=preview or f"Envio registrado para {recipient}: {title}",
+        )
+
+    def _service_desk_receipt(
+        self,
+        run: OnboardingRun,
+        source_section: str,
+        title: str,
+        owner_role: str,
+        preview: str | None = None,
+    ) -> DispatchReceipt:
+        ticket_key = f"SIM-{abs(hash((run.run_id, run.revision_number, source_section, title))) % 100000:05d}"
+        return DispatchReceipt(
+            runId=run.run_id,
+            revisionNumber=run.revision_number,
+            sourceSection=source_section,
+            taskTitle=title,
+            ownerRole=owner_role,
+            channel=DispatchChannel.SERVICE_DESK,
+            toolName="SimulatedServiceDeskDispatchTool",
+            recipient=None,
+            destination=f"service-desk::it-onboarding::{ticket_key}",
+            status=DispatchStatus.SENT_SIMULATED,
+            payloadPreview=preview or f"Ticket registrado {ticket_key}: {title}",
+        )
+
+    def _dispatch_key(self, revision_number: int, source_section: str, task_title: str) -> str:
+        return f"{revision_number}:{source_section}:{task_title.strip().lower()}"
+
+    def _dispatch_summary(self, receipts: list[DispatchReceipt]) -> DispatchSummary:
+        return DispatchSummary(
+            total=len(receipts),
+            email=sum(1 for receipt in receipts if receipt.channel == DispatchChannel.EMAIL),
+            serviceDesk=sum(
+                1 for receipt in receipts if receipt.channel == DispatchChannel.SERVICE_DESK
+            ),
+            sentSimulated=sum(
+                1 for receipt in receipts if receipt.status == DispatchStatus.SENT_SIMULATED
+            ),
+            alreadySentSimulated=sum(
+                1
+                for receipt in receipts
+                if receipt.status == DispatchStatus.ALREADY_SENT_SIMULATED
+            ),
+            failedSimulated=sum(
+                1 for receipt in receipts if receipt.status == DispatchStatus.FAILED_SIMULATED
+            ),
+        )
 
     def _action(
         self,

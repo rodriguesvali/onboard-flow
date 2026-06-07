@@ -18,7 +18,7 @@ Approved Define artifacts:
 - `project-context/1.define/prd.md`
 - `project-context/1.define/sad.md`
 
-The current stage is Build post-QA refinements approved under AAMAD Flow. The next valid stage is Deliver planning, pending Agentic Architect direction.
+The current stage is Build post-QA simulated task dispatch refinement pending Agentic Architect review. The next valid stage is Deliver planning after this review gate is approved.
 
 The frontend Build implementation review gate is completed and approved under AAMAD Flow.
 
@@ -45,6 +45,8 @@ Approved role refinements:
 - `.codex/aamad/agents/integration-eng.md`
 
 Backend base implementation, CrewAI live execution update, integration implementation, QA validation, post-QA refinements, CrewAI AMP observability, and the CrewAI AMP environment variable rename are approved. Deliver planning has not started.
+
+A new business request for simulated task dispatch reopened Define scope as an addendum before Delivery. The addendum `project-context/1.define/task-dispatch-simulation-addendum.md` is approved. Simulated task dispatch is implemented and pending Agentic Architect review before Delivery planning.
 
 ## Review Gate
 
@@ -75,3 +77,7 @@ Current post-QA executive summary Markdown Accordion refinement review gate is a
 Current post-QA CrewAI AMP observability refinement review gate is approved as recorded in `.codex/aamad/review-log.md`.
 
 Current post-QA CrewAI AMP environment variable rename review gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current simulated task dispatch Define addendum review gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current simulated task dispatch Build refinement review gate is pending Agentic Architect review.

@@ -9,6 +9,7 @@ describe('GeneratePlanPage', () => {
     startRun: vi.fn(),
     pollRunStatus: vi.fn(),
     refineRun: vi.fn(),
+    dispatchRun: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -77,6 +78,57 @@ describe('GeneratePlanPage', () => {
         validationResult: { status: 'complete', issues: [] },
       }),
     );
+    onboardingRunService.dispatchRun.mockReturnValue(
+      of({
+        runId: 'mock-run-1',
+        revisionNumber: 1,
+        status: 'done',
+        simulated: true,
+        dispatchSummary: {
+          total: 2,
+          email: 1,
+          serviceDesk: 1,
+          sentSimulated: 2,
+          alreadySentSimulated: 0,
+          failedSimulated: 0,
+        },
+        receipts: [
+          {
+            receiptId: 'receipt-1',
+            runId: 'mock-run-1',
+            revisionNumber: 1,
+            sourceSection: 'communications',
+            taskTitle: 'Bem-vindo',
+            ownerRole: 'COLLABORATOR',
+            channel: 'email',
+            toolName: 'SimulatedEmailDispatchTool',
+            recipient: 'Ana Silva',
+            destination: 'email::Ana Silva',
+            status: 'sent_simulated',
+            simulated: true,
+            createdAt: '2026-06-07T20:55:06Z',
+            payloadPreview: 'Envio registrado para Ana Silva: Bem-vindo',
+          },
+          {
+            receiptId: 'receipt-2',
+            runId: 'mock-run-1',
+            revisionNumber: 1,
+            sourceSection: 'itChecklist',
+            taskTitle: 'Ferramentas de IA aprovadas',
+            ownerRole: 'TI',
+            channel: 'service_desk',
+            toolName: 'SimulatedServiceDeskDispatchTool',
+            recipient: null,
+            destination: 'service-desk::it-onboarding::SIM-00001',
+            status: 'sent_simulated',
+            simulated: true,
+            createdAt: '2026-06-07T20:55:06Z',
+            payloadPreview: 'Ticket registrado SIM-00001: Ferramentas de IA aprovadas',
+          },
+        ],
+        agentActivity: [],
+      }),
+    );
 
     await TestBed.configureTestingModule({
       imports: [GeneratePlanPage],
@@ -88,6 +140,7 @@ describe('GeneratePlanPage', () => {
     onboardingRunService.startRun.mockClear();
     onboardingRunService.pollRunStatus.mockClear();
     onboardingRunService.refineRun.mockClear();
+    onboardingRunService.dispatchRun.mockClear();
     localStorage.removeItem('onboardflow-theme');
     document.documentElement.classList.remove('app-dark');
     delete document.documentElement.dataset['theme'];
@@ -176,11 +229,11 @@ describe('GeneratePlanPage', () => {
     );
     expect(fixture.nativeElement.textContent).toContain('Ana Silva');
     expect(fixture.nativeElement.textContent).toContain('Item validado.');
-    expect(fixture.nativeElement.textContent).toContain('Aprovar plano');
+    expect(fixture.nativeElement.textContent).toContain('Aprovar e simular envios');
     expect(fixture.nativeElement.textContent).toContain('Solicitar ajustes');
   });
 
-  it('lets the user approve a generated plan in the review view', async () => {
+  it('lets the user approve a generated plan and see simulated dispatch receipts', async () => {
     const fixture = TestBed.createComponent(GeneratePlanPage);
     fixture.detectChanges();
 
@@ -214,13 +267,19 @@ describe('GeneratePlanPage', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     const approveButton = Array.from(compiled.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('Aprovar plano'),
+      button.textContent?.includes('Aprovar e simular envios'),
     ) as HTMLButtonElement;
     approveButton.click();
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Plano aprovado nesta sessao de revisao.');
-    expect(fixture.nativeElement.textContent).toContain('Nenhuma comunicacao foi enviada.');
+    expect(onboardingRunService.dispatchRun).toHaveBeenCalledWith('mock-run-1');
+    expect(fixture.nativeElement.textContent).toContain('Plano aprovado e envios simulados');
+    expect(fixture.nativeElement.textContent).toContain('Enviado');
+    expect(fixture.nativeElement.textContent).toContain('2 tarefas encaminhadas');
+    expect(fixture.nativeElement.textContent).toContain('SimulatedServiceDeskDispatchTool');
+    expect(fixture.nativeElement.textContent).toContain('Ferramentas de IA aprovadas');
   });
 
   it('requires feedback before registering requested changes', async () => {

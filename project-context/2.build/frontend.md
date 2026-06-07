@@ -200,3 +200,46 @@ Results:
 - Backend compileall passed for `src` and `tests`.
 - Backend tests now cover that English fake CrewAI summaries are not included in the normalized executive summary.
 - Agentic Architect approved the executive summary Markdown Accordion refinement.
+
+## 9. Simulated Task Dispatch UI Refinement
+
+Date: 2026-06-07
+Status: Pending Agentic Architect review
+
+Implemented after the approved Define addendum `project-context/1.define/task-dispatch-simulation-addendum.md`.
+
+Documentation/tooling checked before implementation:
+
+- Context7 Angular documentation for `HttpClient.post()` mutation behavior and component async state testing.
+- PrimeNG MCP categories were checked before reusing existing PrimeNG Button, Message, Tag, Card, and result layout patterns.
+
+Changed behavior:
+
+- Replaced session-local `Aprovar plano` with backend-backed `Aprovar e simular envios`.
+- Added frontend API contract for `DispatchRunResponse`, `DispatchSummary`, and `DispatchReceipt`.
+- Added `dispatchRun(runId)` to `OnboardingRunService`.
+- The approval action now calls `POST /api/onboarding/runs/{runId}/dispatch`.
+- The result view shows simulated receipt counts by channel and compact receipt cards with channel, tool, destination, and payload preview.
+- Status copy now states that no external system was acionado.
+- Opening a new adjustment request clears stale dispatch receipts for the previous revision.
+
+Validation evidence:
+
+```text
+npm test -- --watch=false
+npm run build
+npx prettier --check .
+```
+
+Results:
+
+- Frontend tests passed: 4 files, 16 tests.
+- Angular production build passed without budget warnings.
+- Prettier check passed.
+
+Follow-up adjustment on 2026-06-07:
+
+- Agentic Architect requested replacing the visible receipt status label `Simulado` with `Enviado`.
+- Frontend dispatch receipt status labels now show `Enviado`, `Ja enviado`, and `Falha no envio`.
+- Backend receipt payload previews now use `Envio registrado` and `Ticket registrado` while the surrounding UI still states that no external system was acionado.
+- Validation evidence: `npm test -- --watch=false --include src/app/features/onboarding/generate-plan/generate-plan.page.spec.ts` passed with 1 file and 6 tests.

@@ -30,6 +30,17 @@ class PlanStatus(StrEnum):
     INCOMPLETE = "incomplete"
 
 
+class DispatchChannel(StrEnum):
+    EMAIL = "email"
+    SERVICE_DESK = "service_desk"
+
+
+class DispatchStatus(StrEnum):
+    SENT_SIMULATED = "sent_simulated"
+    ALREADY_SENT_SIMULATED = "already_sent_simulated"
+    FAILED_SIMULATED = "failed_simulated"
+
+
 class ItemStatus(StrEnum):
     PENDING = "pending"
     RECOMMENDED = "recommended"
@@ -127,6 +138,32 @@ class AgentAction(CamelModel):
     created_at: datetime = Field(default_factory=utc_now, alias="createdAt")
 
 
+class DispatchReceipt(CamelModel):
+    receipt_id: str = Field(default_factory=lambda: new_id("receipt"), alias="receiptId")
+    run_id: str = Field(alias="runId")
+    revision_number: int = Field(alias="revisionNumber")
+    source_section: str = Field(alias="sourceSection")
+    task_title: str = Field(alias="taskTitle")
+    owner_role: str = Field(alias="ownerRole")
+    channel: DispatchChannel
+    tool_name: str = Field(alias="toolName")
+    recipient: str | None = None
+    destination: str
+    status: DispatchStatus
+    simulated: Literal[True] = True
+    created_at: datetime = Field(default_factory=utc_now, alias="createdAt")
+    payload_preview: str = Field(alias="payloadPreview")
+
+
+class DispatchSummary(CamelModel):
+    total: int
+    email: int
+    service_desk: int = Field(alias="serviceDesk")
+    sent_simulated: int = Field(alias="sentSimulated")
+    already_sent_simulated: int = Field(alias="alreadySentSimulated")
+    failed_simulated: int = Field(alias="failedSimulated")
+
+
 class SpecialistOutput(CamelModel):
     task_id: str = Field(alias="taskId")
     agent_name: str = Field(alias="agentName")
@@ -151,6 +188,7 @@ class OnboardingRun(CamelModel):
     markdown: str | None = None
     error_message: str | None = Field(default=None, alias="errorMessage")
     action_history: list[AgentAction] = Field(default_factory=list, alias="actionHistory")
+    dispatch_receipts: list[DispatchReceipt] = Field(default_factory=list, alias="dispatchReceipts")
     revision_number: int = Field(default=1, alias="revisionNumber")
     created_at: datetime = Field(default_factory=utc_now, alias="createdAt")
     updated_at: datetime = Field(default_factory=utc_now, alias="updatedAt")
@@ -169,6 +207,7 @@ class RunStatusResponse(CamelModel):
     markdown: str | None = None
     validation_result: ValidationResult | None = Field(default=None, alias="validationResult")
     agent_activity: list[AgentAction] = Field(default_factory=list, alias="agentActivity")
+    dispatch_receipts: list[DispatchReceipt] = Field(default_factory=list, alias="dispatchReceipts")
     error_message: str | None = Field(default=None, alias="errorMessage")
 
 
@@ -186,3 +225,12 @@ class RefinePlanResponse(CamelModel):
     markdown: str
     validation_result: ValidationResult = Field(alias="validationResult")
 
+
+class DispatchRunResponse(CamelModel):
+    run_id: str = Field(alias="runId")
+    revision_number: int = Field(alias="revisionNumber")
+    status: RunStatus
+    simulated: Literal[True] = True
+    dispatch_summary: DispatchSummary = Field(alias="dispatchSummary")
+    receipts: list[DispatchReceipt]
+    agent_activity: list[AgentAction] = Field(alias="agentActivity")

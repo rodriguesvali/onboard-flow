@@ -18,10 +18,15 @@
     "rationale": "Acesso necessario para funcoes de engenharia."
   },
   {
+    "title": "Ferramentas de IA aprovadas",
+    "departments": ["engineering", "technology", "engenharia"],
+    "owner_role": "TI",
+    "rationale": "Licenca e acesso a ferramentas de IA aprovadas para apoiar desenvolvimento, sempre conforme politica interna."
+  },
+  {
     "title": "CRM",
     "departments": ["sales", "comercial"],
     "owner_role": "TI",
     "rationale": "Acesso necessario para funcoes comerciais."
   }
 ]
-

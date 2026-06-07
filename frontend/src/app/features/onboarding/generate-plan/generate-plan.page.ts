@@ -14,7 +14,12 @@ import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 
 import { initialGeneratePlanViewModel, transitionGeneratePlan } from './generate-plan.state';
-import { EmployeeOnboardingInput, ResultItem } from './onboarding-run.models';
+import {
+  DispatchReceipt,
+  DispatchSummary,
+  EmployeeOnboardingInput,
+  ResultItem,
+} from './onboarding-run.models';
 import { OnboardingRunService } from './onboarding-run.service';
 
 interface SelectOption {
@@ -82,6 +87,10 @@ export class GeneratePlanPage {
   protected readonly reviewFeedbackSubmitted = signal(false);
   protected readonly refinementRunning = signal(false);
   protected readonly refinementError = signal<string | null>(null);
+  protected readonly dispatchRunning = signal(false);
+  protected readonly dispatchError = signal<string | null>(null);
+  protected readonly dispatchSummary = signal<DispatchSummary | null>(null);
+  protected readonly dispatchReceipts = signal<DispatchReceipt[]>([]);
   protected readonly reviewFeedback = new FormControl('', {
     nonNullable: true,
     validators: [Validators.required],
@@ -151,7 +160,7 @@ export class GeneratePlanPage {
     if (this.viewModel().state === 'done') {
       switch (this.reviewDecision()) {
         case 'approved':
-          return 'Plano aprovado nesta sessao de revisao. Nenhuma comunicacao foi enviada.';
+          return 'Plano aprovado e envios simulados registrados. Nenhum sistema externo foi acionado.';
         case 'changes_requested':
           return 'Ajustes aplicados ao plano. Revise a nova versao antes de aprovar.';
         case 'pending':
@@ -241,10 +250,31 @@ export class GeneratePlanPage {
   }
 
   protected approvePlan(): void {
-    this.reviewDecision.set('approved');
-    this.reviewFeedbackOpen.set(false);
-    this.reviewFeedbackSubmitted.set(false);
-    this.reviewFeedback.reset('');
+    const runId = this.viewModel().runId;
+    if (!runId) {
+      this.reviewDecision.set('approved');
+      return;
+    }
+
+    this.dispatchRunning.set(true);
+    this.dispatchError.set(null);
+    this.onboardingRunService.dispatchRun(runId).subscribe({
+      next: (response) => {
+        this.reviewDecision.set('approved');
+        this.reviewFeedbackOpen.set(false);
+        this.reviewFeedbackSubmitted.set(false);
+        this.reviewFeedback.reset('');
+        this.dispatchSummary.set(response.dispatchSummary);
+        this.dispatchReceipts.set(response.receipts);
+        this.dispatchRunning.set(false);
+      },
+      error: (error: unknown) => {
+        this.dispatchRunning.set(false);
+        this.dispatchError.set(
+          apiErrorMessage(error, 'Nao foi possivel simular os envios no backend.'),
+        );
+      },
+    });
   }
 
   protected openChangeRequest(): void {
@@ -252,6 +282,9 @@ export class GeneratePlanPage {
     this.reviewFeedbackOpen.set(true);
     this.reviewFeedbackSubmitted.set(false);
     this.refinementError.set(null);
+    this.dispatchError.set(null);
+    this.dispatchSummary.set(null);
+    this.dispatchReceipts.set([]);
   }
 
   protected submitChangeRequest(): void {
@@ -406,7 +439,39 @@ export class GeneratePlanPage {
     this.reviewFeedbackSubmitted.set(false);
     this.refinementRunning.set(false);
     this.refinementError.set(null);
+    this.dispatchRunning.set(false);
+    this.dispatchError.set(null);
+    this.dispatchSummary.set(null);
+    this.dispatchReceipts.set([]);
     this.reviewFeedback.reset('');
+  }
+
+  protected dispatchChannelLabel(channel: DispatchReceipt['channel']): string {
+    return channel === 'service_desk' ? 'Service desk' : 'Email';
+  }
+
+  protected dispatchStatusLabel(status: DispatchReceipt['status']): string {
+    const labels: Record<DispatchReceipt['status'], string> = {
+      sent_simulated: 'Enviado',
+      already_sent_simulated: 'Ja enviado',
+      failed_simulated: 'Falha no envio',
+    };
+
+    return labels[status];
+  }
+
+  protected dispatchStatusSeverity(
+    status: DispatchReceipt['status'],
+  ): 'info' | 'success' | 'warn' | 'danger' {
+    switch (status) {
+      case 'sent_simulated':
+        return 'success';
+      case 'already_sent_simulated':
+        return 'info';
+      case 'failed_simulated':
+      default:
+        return 'danger';
+    }
   }
 
   private readInitialThemeMode(): ThemeMode {

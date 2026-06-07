@@ -27,6 +27,7 @@ export interface RunStatusResponse {
   result?: OnboardingPlanResult;
   validationResult?: ValidationResult;
   agentActivity?: AgentAction[];
+  dispatchReceipts?: DispatchReceipt[];
   errorMessage?: string;
 }
 
@@ -38,6 +39,16 @@ export interface RefinePlanResponse {
   result: OnboardingPlanResult;
   markdown: string;
   validationResult: ValidationResult;
+}
+
+export interface DispatchRunResponse {
+  runId: string;
+  revisionNumber: number;
+  status: 'running' | 'done' | 'error';
+  simulated: true;
+  dispatchSummary: DispatchSummary;
+  receipts: DispatchReceipt[];
+  agentActivity: AgentAction[];
 }
 
 export interface OnboardingPlanResult {
@@ -102,4 +113,30 @@ export interface AgentAction {
   retryCount: number;
   validationResult?: string | null;
   createdAt: string;
+}
+
+export interface DispatchSummary {
+  total: number;
+  email: number;
+  serviceDesk: number;
+  sentSimulated: number;
+  alreadySentSimulated: number;
+  failedSimulated: number;
+}
+
+export interface DispatchReceipt {
+  receiptId: string;
+  runId: string;
+  revisionNumber: number;
+  sourceSection: string;
+  taskTitle: string;
+  ownerRole: string;
+  channel: 'email' | 'service_desk';
+  toolName: string;
+  recipient?: string | null;
+  destination: string;
+  status: 'sent_simulated' | 'already_sent_simulated' | 'failed_simulated';
+  simulated: true;
+  createdAt: string;
+  payloadPreview: string;
 }

@@ -3,6 +3,7 @@ import { Inject, Injectable, InjectionToken } from '@angular/core';
 import { catchError, filter, Observable, switchMap, take, throwError, timeout, timer } from 'rxjs';
 
 import {
+  DispatchRunResponse,
   EmployeeOnboardingInput,
   RefinePlanResponse,
   RunStatusResponse,
@@ -47,6 +48,13 @@ export class OnboardingRunService {
       instruction,
       planVersion,
     });
+  }
+
+  dispatchRun(runId: string): Observable<DispatchRunResponse> {
+    return this.http.post<DispatchRunResponse>(
+      this.url(`/api/onboarding/runs/${runId}/dispatch`),
+      {},
+    );
   }
 
   private url(path: string): string {

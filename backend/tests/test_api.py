@@ -150,3 +150,60 @@ def test_refine_logs_deterministic_agent_operations(client, employee_payload, ca
         f"run_id={run_id} task_id=refine_plan_revision agent=Refinement status=done"
     ) in messages
     assert f"onboarding_refinement_completed run_id={run_id} revision_number=2" in messages
+
+
+def test_dispatch_simulates_all_actionable_plan_tasks(client, employee_payload):
+    run_id = client.post("/api/onboarding/generate", json=employee_payload).json()["runId"]
+
+    response = client.post(f"/api/onboarding/runs/{run_id}/dispatch")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["runId"] == run_id
+    assert body["simulated"] is True
+    assert body["dispatchSummary"]["total"] == len(body["receipts"])
+    assert body["dispatchSummary"]["sentSimulated"] == len(body["receipts"])
+    assert body["dispatchSummary"]["serviceDesk"] >= 1
+    assert body["dispatchSummary"]["email"] >= 1
+    assert all(receipt["simulated"] is True for receipt in body["receipts"])
+    assert all(receipt["status"] == "sent_simulated" for receipt in body["receipts"])
+    assert any(
+        receipt["toolName"] == "SimulatedServiceDeskDispatchTool"
+        and receipt["taskTitle"] == "Ferramentas de IA aprovadas"
+        for receipt in body["receipts"]
+    )
+    assert any(
+        receipt["toolName"] == "SimulatedEmailDispatchTool"
+        and receipt["taskTitle"] == "Uso responsavel de IA"
+        for receipt in body["receipts"]
+    )
+
+    run_response = client.get(f"/api/onboarding/runs/{run_id}")
+    run_body = run_response.json()
+    assert len(run_body["dispatchReceipts"]) == len(body["receipts"])
+    assert any(
+        action["actionType"] == "dispatch_simulated" for action in run_body["agentActivity"]
+    )
+
+
+def test_dispatch_is_idempotent_for_same_revision(client, employee_payload):
+    run_id = client.post("/api/onboarding/generate", json=employee_payload).json()["runId"]
+    first = client.post(f"/api/onboarding/runs/{run_id}/dispatch").json()
+
+    second_response = client.post(f"/api/onboarding/runs/{run_id}/dispatch")
+
+    assert second_response.status_code == 200
+    second = second_response.json()
+    assert second["dispatchSummary"]["total"] == first["dispatchSummary"]["total"]
+    assert second["dispatchSummary"]["sentSimulated"] == 0
+    assert second["dispatchSummary"]["alreadySentSimulated"] == first["dispatchSummary"]["total"]
+
+    run_body = client.get(f"/api/onboarding/runs/{run_id}").json()
+    assert len(run_body["dispatchReceipts"]) == first["dispatchSummary"]["total"]
+
+
+def test_dispatch_unknown_run_returns_404(client):
+    response = client.post("/api/onboarding/runs/run_missing/dispatch")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Run not found or not ready for dispatch"

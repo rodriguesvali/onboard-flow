@@ -8,6 +8,7 @@ from onboardflow.api.dependencies import get_app_settings, get_application_servi
 from onboardflow.application.services import OnboardingApplicationService
 from onboardflow.config.settings import Settings
 from onboardflow.domain.models import (
+    DispatchRunResponse,
     EmployeeOnboardingInput,
     RefinePlanRequest,
     RefinePlanResponse,
@@ -69,6 +70,16 @@ def create_app() -> FastAPI:
         response = service.refine(run_id, payload)
         if response is None:
             raise HTTPException(status_code=404, detail="Run not found or not ready for refinement")
+        return response
+
+    @app.post("/api/onboarding/runs/{run_id}/dispatch", response_model=DispatchRunResponse)
+    def dispatch_run(
+        run_id: str,
+        service: OnboardingApplicationService = Depends(get_application_service),
+    ) -> DispatchRunResponse:
+        response = service.dispatch(run_id)
+        if response is None:
+            raise HTTPException(status_code=404, detail="Run not found or not ready for dispatch")
         return response
 
     return app

@@ -214,7 +214,7 @@ Results:
 ## 9. Post-QA CrewAI AMP Observability
 
 Date: 2026-06-01
-Status: Pending Agentic Architect review
+Status: Approved by Agentic Architect
 
 Implemented after Agentic Architect direction to continue the Build phase and add observability through CrewAI AMP.
 
@@ -271,3 +271,46 @@ Follow-up rename on 2026-06-02:
 - Renamed the backend AMP tracing environment variable from `ONBOARDFLOW_CREWAI_AMP_TRACING` to `CREWAI_AMP_TRACING`.
 - Removed backend dependence on `CREWAI_TRACING_ENABLED` as an application setting; that native CrewAI variable may still be used by CrewAI tooling, but OnboardFlow controls the explicit `Crew(tracing=...)` flag through `CREWAI_AMP_TRACING`.
 - Validation evidence after rename: `uv run pytest` passed with 3 files and 14 tests; `uv run python -m compileall src tests` passed.
+- Agentic Architect approved CrewAI AMP as concluded on 2026-06-07.
+
+## 10. Simulated Task Dispatch Build Refinement
+
+Date: 2026-06-07
+Status: Pending Agentic Architect review
+
+Implemented after the approved Define addendum `project-context/1.define/task-dispatch-simulation-addendum.md`.
+
+Documentation/tooling checked before implementation:
+
+- Context7 FastAPI documentation for `response_model` route declarations and `HTTPException` behavior.
+- Context7 Pydantic documentation for aliases, nested response models, literal values, and JSON serialization.
+
+Included:
+
+- Added `POST /api/onboarding/runs/{runId}/dispatch`.
+- Added typed dispatch contracts: `DispatchReceipt`, `DispatchSummary`, and `DispatchRunResponse`.
+- Added `dispatch_receipts` persistence on `OnboardingRunRecord` through Alembic migration `0002_add_dispatch_receipts`.
+- Implemented deterministic `DispatchRouter` behavior inside the application service, outside Crew/LLM execution.
+- Added simulated channel-specific tools by contract:
+  - `SimulatedEmailDispatchTool`
+  - `SimulatedServiceDeskDispatchTool`
+- Dispatch derives actionable tasks from communications, documents, IT checklist, training path, initial agenda, pending actions, risks, and next recommended actions.
+- Dispatch is idempotent per run revision and task key; repeated dispatch returns `already_sent_simulated` receipts without duplicating persisted receipts.
+- Added AI tools demo coverage through local catalogs:
+  - `Ferramentas de IA aprovadas` routes to service desk.
+  - `Uso responsavel de IA` routes to email.
+
+Validation evidence:
+
+```text
+uv run pytest
+uv run python -m compileall src tests
+uv run alembic upgrade head
+```
+
+Results:
+
+- Backend tests passed: 3 files, 17 tests.
+- Compileall passed for `src` and `tests`.
+- Alembic upgraded SQLite from `0001_create_onboarding_runs` to `0002_add_dispatch_receipts`.
+- Deterministic API smoke generated run `run_6c2e85f468484302`, produced 26 dispatch receipts, persisted 26 receipts, routed AI tool access through service desk, and routed responsible AI training through email.

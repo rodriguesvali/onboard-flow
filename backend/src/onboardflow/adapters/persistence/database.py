@@ -24,6 +24,7 @@ class OnboardingRunRecord(Base):
     markdown: Mapped[str | None] = mapped_column(String)
     error_message: Mapped[str | None] = mapped_column(String)
     action_history: Mapped[list] = mapped_column(JSON, nullable=False)
+    dispatch_receipts: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     revision_number: Mapped[int] = mapped_column(nullable=False, default=1)
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -46,4 +47,3 @@ def get_session() -> Generator[Session, None, None]:
 
 def touch_record(record: OnboardingRunRecord) -> None:
     record.updated_at = utc_now()
-

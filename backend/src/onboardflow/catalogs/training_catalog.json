@@ -12,6 +12,12 @@
     "rationale": "Treinamento obrigatorio para uso seguro dos sistemas internos."
   },
   {
+    "title": "Uso responsavel de IA",
+    "departments": ["all"],
+    "owner_role": "RH",
+    "rationale": "Orienta o colaborador sobre uso permitido de ferramentas de IA, privacidade e revisao humana."
+  },
+  {
     "title": "Processo de engenharia",
     "departments": ["engineering", "technology", "engenharia"],
     "owner_role": "Gestor",
@@ -24,4 +30,3 @@
     "rationale": "Ajuda o colaborador a seguir a abordagem comercial padronizada."
   }
 ]
-
