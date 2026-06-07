@@ -11,6 +11,7 @@ See the full agent definitions adapted for Codex under `.codex/aamad/agents/`.
 - **@backend.eng** — Backend Engineer: Builds the Python CrewAI backend service
 - **@integration.eng** — Integration Engineer: Connects the Angular workbench to the Python CrewAI API
 - **@qa.eng** — QA Engineer: Validates MVP functionality
+- **@devops.eng** — DevOps Engineer: Prepares reproducibility, CI/CD, deployment readiness, observability, and safe operations
 
 ## Workflow
 1. **Define** (Phase 1): @product-mgr → Market Research → PRD → @system.arch → SAD

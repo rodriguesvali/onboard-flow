@@ -18,7 +18,7 @@ Approved Define artifacts:
 - `project-context/1.define/prd.md`
 - `project-context/1.define/sad.md`
 
-The current stage is Build post-QA simulated task dispatch refinement pending Agentic Architect review. The next valid stage is Deliver planning after this review gate is approved.
+The current stage is Delivery planning. Build is complete and approved, including simulated task dispatch.
 
 The frontend Build implementation review gate is completed and approved under AAMAD Flow.
 
@@ -44,9 +44,11 @@ Approved role refinements:
 - `.codex/aamad/agents/backend-eng.md`
 - `.codex/aamad/agents/integration-eng.md`
 
-Backend base implementation, CrewAI live execution update, integration implementation, QA validation, post-QA refinements, CrewAI AMP observability, and the CrewAI AMP environment variable rename are approved. Deliver planning has not started.
+Backend base implementation, CrewAI live execution update, integration implementation, QA validation, post-QA refinements, CrewAI AMP observability, the CrewAI AMP environment variable rename, and simulated task dispatch are approved. Deliver planning is ready to start.
 
-A new business request for simulated task dispatch reopened Define scope as an addendum before Delivery. The addendum `project-context/1.define/task-dispatch-simulation-addendum.md` is approved. Simulated task dispatch is implemented and pending Agentic Architect review before Delivery planning.
+A new business request for simulated task dispatch reopened Define scope as an addendum before Delivery. The addendum `project-context/1.define/task-dispatch-simulation-addendum.md` is approved. Simulated task dispatch implementation is approved.
+
+The project-specific DevOps persona `.codex/aamad/agents/devops-eng.md` has been created and is pending Agentic Architect review before producing Delivery artifacts.
 
 ## Review Gate
 
@@ -80,4 +82,6 @@ Current post-QA CrewAI AMP environment variable rename review gate is approved a
 
 Current simulated task dispatch Define addendum review gate is approved as recorded in `.codex/aamad/review-log.md`.
 
-Current simulated task dispatch Build refinement review gate is pending Agentic Architect review.
+Current simulated task dispatch Build refinement review gate is approved as recorded in `.codex/aamad/review-log.md`.
+
+Current Delivery planning is pending DevOps persona review before producing `project-context/3.deliver/` artifacts.
